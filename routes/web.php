@@ -1,0 +1,108 @@
+<?php
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BasicAbstractReasoningController;
+use App\Http\Controllers\BasicMathController;
+use App\Http\Controllers\CareerAnchorController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\CharacterRefController;
+use App\Http\Controllers\ColorController;
+use App\Http\Controllers\DiscController;
+use App\Http\Controllers\EducationController;
+use App\Http\Controllers\EligibilityController;
+use App\Http\Controllers\EmploymentRecController;
+use App\Http\Controllers\EnneagramController;
+use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\FileController;
+use App\Http\Controllers\MayaController;
+use App\Http\Controllers\MiqController;
+use App\Http\Controllers\SkillController;
+use App\Http\Controllers\TaptController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VakController;
+use App\Http\Controllers\WhyIWorkController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/apply', [AuthController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [UserController::class, 'store'])->name('register.store');
+});
+
+Route::middleware(['auth', 'checkUserStatus'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    // Route::get('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/', function () {
+        return redirect()->route('personal.show', [], 302);
+    });
+
+    Route::get('/profile/personal', [UserController::class, 'show'])->name('personal.show');
+    Route::post('/profile/personal', [UserController::class, 'store'])->name('personal.store');
+
+    Route::get('/profile/family', [FamilyController::class, 'index'])->name('family.index');
+    Route::post('/profile/family', [FamilyController::class, 'store'])->name('family.store');
+    Route::delete('/profile/family/{id}', [FamilyController::class, 'delete'])->name('family.delete');
+
+    Route::get('/profile/skill', [SkillController::class, 'index'])->name('skill.index');
+    Route::post('/profile/skill', [SkillController::class, 'store'])->name('skill.store');
+    Route::delete('/profile/skill/{id}', [SkillController::class, 'delete'])->name('skill.delete');
+
+    Route::get('/profile/education', [EducationController::class, 'index'])->name('education.index');
+    Route::post('/profile/education', [EducationController::class, 'store'])->name('education.store');
+    Route::delete('/profile/education/{id}', [EducationController::class, 'delete'])->name('education.delete');
+
+    Route::get('/professional/license', [EligibilityController::class, 'index'])->name('license.index');
+    Route::post('/professional/license', [EligibilityController::class, 'store'])->name('license.store');
+    Route::delete('/professional/license/{id}', [EligibilityController::class, 'delete'])->name('license.delete');
+
+    Route::get('/professional/certificate', [CertificateController::class, 'index'])->name('certificate.index');
+    Route::post('/professional/certificate', [CertificateController::class, 'store'])->name('certificate.store');
+    Route::delete('/professional/certificate/{id}', [CertificateController::class, 'delete'])->name('certificate.delete');
+
+    Route::get('/work/employment', [EmploymentRecController::class, 'index'])->name('employment.index');
+    Route::post('/work/employment', [EmploymentRecController::class, 'store'])->name('employment.store');
+    Route::delete('/work/employment/{id}', [EmploymentRecController::class, 'delete'])->name('employment.delete');
+
+    Route::get('/work/characterref', [CharacterRefController::class, 'index'])->name('characterref.index');
+    Route::post('/work/characterref', [CharacterRefController::class, 'store'])->name('characterref.store');
+    Route::delete('/work/characterref/{id}', [CharacterRefController::class, 'delete'])->name('characterref.delete');
+
+    Route::get('/personality/enneagram', [EnneagramController::class, 'show'])->name('enneagram.show');
+    Route::post('/personality/enneagram', [EnneagramController::class, 'store'])->name('enneagram.store');
+
+    Route::get('/personality/tapt', [TaptController::class, 'show'])->name('tapt.show');
+    Route::post('/personality/tapt', [TaptController::class, 'store'])->name('tapt.store');
+
+    Route::get('/personality/disc', [DiscController::class, 'show'])->name('disc.show');
+    Route::post('/personality/disc', [DiscController::class, 'store'])->name('disc.store');
+
+    Route::get('/personality/miq', [MiqController::class, 'show'])->name('miq.show');
+    Route::post('/personality/miq', [MiqController::class, 'store'])->name('miq.store');
+
+    Route::get('/personality/color', [ColorController::class, 'show'])->name('color.show');
+    Route::post('/personality/color', [ColorController::class, 'store'])->name('color.store');
+
+    Route::get('/personality/vak', [VakController::class, 'show'])->name('vak.show');
+    Route::post('/personality/vak', [VakController::class, 'store'])->name('vak.store');
+    
+    Route::get('/personality/why-i-work', [WhyIWorkController::class, 'show'])->name('why_i_work.show');
+    Route::post('/personality/why-i-work', [WhyIWorkController::class, 'store'])->name('why_i_work.store');
+
+    Route::get('/personality/career-anchors', [CareerAnchorController::class, 'show'])->name('career_anchors.show');
+    Route::post('/personality/career-anchors', [CareerAnchorController::class, 'store'])->name('career_anchors.store');
+
+    Route::get('/personality/abtract-reasoning', [BasicAbstractReasoningController::class, 'show'])->name('abstract_reasoning.show');
+    Route::post('/personality/abtract-reasoning', [BasicAbstractReasoningController::class, 'store'])->name('abstract_reasoning.store');
+
+    Route::get('/personality/basic-math', [BasicMathController::class, 'show'])->name('basic_math.show');
+    Route::post('/personality/basic-math', [BasicMathController::class, 'store'])->name('basic_math.store');
+
+    Route::get('/personality/maya', [MayaController::class, 'show'])->name('maya.show');
+    Route::post('/personality/maya', [MayaController::class, 'store'])->name('maya.store');
+
+    Route::get('/file/{src}/{filename}', [FileController::class, 'serve'])->name('file.get');
+
+    Route::post('/profile/img', [UserController::class, 'storeProfileImg'])->name('file.store');
+});
