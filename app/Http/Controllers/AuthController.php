@@ -14,8 +14,12 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function showRegisterForm()
+    public function showRegisterForm(Request $request)
     {
+        if ($request->has('job')) {
+            session(['intended_job_id' => $request->query('job')]);
+        }
+
         $provinceList = DB::connection('zen')->table('tbl_province')->get();
         $municipalityList = DB::connection('zen')->table('tbl_municipality as a')
             ->leftJoin('tbl_province as b', 'pr_code', '=', 'ct_province')

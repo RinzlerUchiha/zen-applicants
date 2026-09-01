@@ -13,7 +13,9 @@ use App\Http\Controllers\EligibilityController;
 use App\Http\Controllers\EmploymentRecController;
 use App\Http\Controllers\EnneagramController;
 use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\JobListingController;
 use App\Http\Controllers\MayaController;
 use App\Http\Controllers\MiqController;
 use App\Http\Controllers\SkillController;
@@ -22,6 +24,13 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VakController;
 use App\Http\Controllers\WhyIWorkController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return redirect()->route('careers.index');
+});
+
+Route::get('/careers', [JobListingController::class, 'index'])->name('careers.index');
+Route::get('/careers/{id}', [JobListingController::class, 'show'])->name('careers.show');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -34,9 +43,8 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     // Route::get('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/', function () {
-        return redirect()->route('personal.show', [], 302);
-    });
+    Route::post('/careers/{id}/apply', [JobListingController::class, 'apply'])->name('careers.apply');
+    Route::get('/applications', [ApplicationController::class, 'index'])->name('applications.index');
 
     Route::get('/profile/personal', [UserController::class, 'show'])->name('personal.show');
     Route::post('/profile/personal', [UserController::class, 'store'])->name('personal.store');

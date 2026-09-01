@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\FileService;
+use App\Services\JobApplicationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -242,7 +243,17 @@ class UserController extends Controller
             if ($isNew) {
                 Auth::login($user);
                 $request->session()->regenerate();
-                return redirect()->intended(route('personal.show'));
+
+                $intendedJobId = session()->pull('intended_job_id');
+
+                if ($intendedJobId) {
+                    $result = JobApplicationService::apply($user->app_id, $intendedJobId);
+                    return redirect()
+                        ->route('applications.index')
+                        ->with($result['success'] ? 'success' : 'error', $result['message']);
+                }
+
+                return redirect()->route('careers.index')->with('success', 'Account created! Browse open positions and apply below.');
             }
 
             return redirect()->route('personal.show')->with('success', ($isNew ? 'Profile created!' : 'Personal info updated!'));
