@@ -31,7 +31,7 @@
                 <thead>
                     <tr>
                         <th>Position</th>
-                        <th>REQ ID</th>
+                        <th>MR No.</th>
                         <th>Date Applied</th>
                         <th>Status</th>
                     </tr>

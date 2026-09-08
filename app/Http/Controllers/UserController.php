@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use App\Models\User;
 use App\Services\FileService;
 use App\Services\JobApplicationService;
@@ -9,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -27,7 +29,15 @@ class UserController extends Controller
             ->select('a.*', 'b.ct_name as br_city_name')
             ->get();
 
-        return view('pages.personal', compact('user', 'provinceList', 'municipalityList', 'barangayList'));
+        // Pull the position from the applicant's most recent job application,
+        // rather than the stale free-text snapshot in app_posapplied.
+        $latestApplication = Application::where('app_id', $user?->app_id)
+            ->orderByDesc('applied_at')
+            ->first();
+
+        $appliedPosition = $latestApplication?->jobPosting()?->posting_title;
+
+        return view('pages.personal', compact('user', 'provinceList', 'municipalityList', 'barangayList', 'appliedPosition'));
     }
 
     public static function store(Request $request)
@@ -144,7 +154,10 @@ class UserController extends Controller
 
                 $user = new User();
 
-                $user->app_code = $validated['app-code'];
+                // app_code is this application's password column —
+                // User::getAuthPassword() already points Laravel at it. Stored
+                // hashed; AuthController verifies with Hash::check().
+                $user->app_code = Hash::make($validated['app-code']);
                 $user->app_posapplied = $validated['position-applied'];
                 $user->app_date = now()->format('Y-m-d');
                 $user->app_lname = $validated['personal-lastname'];

@@ -83,6 +83,9 @@
     <div class="container-fluid vh-100">
         <div class="row h-100 my-auto gap-custom align-items-center justify-content-center">
             <div class="col-md-4 mt-md-custom">
+                <a href="{{ route('careers.index') }}" class="d-inline-flex align-items-center text-decoration-none text-muted mb-2" style="font-size:14px;">
+                    <i class="fa fa-arrow-left me-1"></i> Back to Careers
+                </a>
                 <h3 class="text-center fw-normal text-muted mb-3">Login</h3>
                 <form class="mb-3" method="POST" action="{{ route('login') }}">
                     @if ($errors->any())

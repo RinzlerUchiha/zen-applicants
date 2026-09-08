@@ -3,14 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\JobApplicationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
+        // Mirrors showRegisterForm(): arriving from a job posting keeps that
+        // posting so the application can be submitted straight after login.
+        if ($request->has('job')) {
+            session(['intended_job_id' => $request->query('job')]);
+        }
+
         return view('auth.login');
     }
 
@@ -48,23 +56,91 @@ class AuthController extends Controller
         //     return redirect()->intended('/dashboard');
         // }
 
-        $user = User::where('app_code', $credentials['code'])
-        ->where(function($q) use($credentials) {
-            $q->where('app_email', $credentials['email'])
-            ->orWhere('app_mobile', $credentials['mobile']);
-        })
-        ->first();
+        // Identify by email or mobile only — the password is verified
+        // separately below. validate() omits whichever field was left blank,
+        // so both are read defensively and an absent one is not matched
+        // against NULL.
+        $email = $credentials['email'] ?? null;
+        $mobile = $credentials['mobile'] ?? null;
 
-        if($user /* && Hash::check($request->password, $user->U_Password) */)
-        {
-            Auth::login($user);
-            $request->session()->regenerate();
-            return redirect()->intended(route('personal.show'));
+        if ($email === null && $mobile === null) {
+            return $this->failedLogin($request);
         }
 
+        $user = User::where(function ($q) use ($email, $mobile) {
+            if ($email !== null) {
+                $q->orWhere('app_email', $email);
+            }
+            if ($mobile !== null) {
+                $q->orWhere('app_mobile', $mobile);
+            }
+        })->first();
+
+        if (!$user || !$this->passwordMatches($credentials['code'], $user)) {
+            return $this->failedLogin($request);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        // Came here from a job posting — submit that application now rather
+        // than making the applicant find the posting again.
+        $intendedJobId = session()->pull('intended_job_id');
+
+        if ($intendedJobId) {
+            $result = JobApplicationService::apply($user->app_id, $intendedJobId);
+
+            return redirect()
+                ->route('applications.index')
+                ->with($result['success'] ? 'success' : 'error', $result['message']);
+        }
+
+        return redirect()->intended(route('personal.show'));
+    }
+
+    /**
+     * Verifies the submitted password against app_code, this application's
+     * password column (see User::getAuthPassword()).
+     *
+     * LEGACY COMPATIBILITY: app_code was previously stored in plain text.
+     * Rows created before hashing was introduced are compared literally once,
+     * then immediately re-saved as a hash, so those accounts migrate
+     * themselves on first login and the applicant notices nothing. Once no
+     * plain-text rows remain, the legacy branch can be deleted.
+     */
+    private function passwordMatches(string $submitted, User $user): bool
+    {
+        $stored = (string) $user->app_code;
+
+        if ($stored === '') {
+            return false;
+        }
+
+        // password_get_info() reports algo 0 / null for anything that is not
+        // a PHP password hash, which is how a legacy plain-text value is told
+        // apart from a hashed one.
+        $info = password_get_info($stored);
+        $isHashed = !empty($info['algo']);
+
+        if ($isHashed) {
+            return Hash::check($submitted, $stored);
+        }
+
+        if (!hash_equals($stored, $submitted)) {
+            return false;
+        }
+
+        $user->app_code = Hash::make($submitted);
+        $user->save();
+
+        return true;
+    }
+
+    private function failedLogin(Request $request)
+    {
         return back()
-        ->withErrors(['error' => 'Invalid credentials'])
-        ->withInput($request->only(['email', 'mobile']));
+            ->withErrors(['error' => 'Invalid credentials'])
+            ->withInput($request->only(['email', 'mobile']));
     }
 
     public function logout(Request $request)
