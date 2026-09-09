@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Encoders\AutoEncoder;
 use Intervention\Image\Encoders\WebpEncoder;
@@ -10,6 +12,86 @@ use Intervention\Image\ImageManager;
 
 class FileService
 {
+    /**
+     * Stores an applicant document and returns what the caller needs to
+     * record about it.
+     *
+     * Unlike reduceImageFileSizeToWebP(), this never decodes a non-image.
+     * Applicant documents are predominantly PDFs (PSA certificates, NBI
+     * clearances, transcripts), and pushing those through the image pipeline
+     * throws DecoderException. Images still get compressed; everything else
+     * is stored byte-for-byte.
+     *
+     * The stored filename is random and its extension comes from the mime
+     * allow-list, never from the uploaded name — so a file called
+     * "resume.php.pdf" cannot land on disk with an executable extension.
+     *
+     * @return array{file: string, mime: string, size: int, original_name: string}
+     */
+    public static function storeDocument(UploadedFile $file, string $folder, string $disk = 'public'): array
+    {
+        // Independent of the controller's mimes: rule — this re-reads the
+        // file's actual content, so a mismatch here means the request got
+        // past validation somehow and must not be written.
+        $mime = mime_content_type($file->getRealPath());
+        $allowed = config('documents.mimes');
+
+        if (!isset($allowed[$mime])) {
+            throw new \RuntimeException('Unsupported file type.');
+        }
+
+        $extension = $allowed[$mime];
+        $filename = Str::random(40) . '.' . $extension;
+        $destination = trim($folder, '/') . '/' . $filename;
+
+        if ($mime === 'image/jpeg' || $mime === 'image/png') {
+            try {
+                // Compress to keep scans of IDs and photos manageable. The
+                // reducer may rewrite the extension to .webp when the driver
+                // supports it, so take the name it actually wrote back.
+                $written = self::reduceImageFileSizeToWebP(
+                    $file->getRealPath(),
+                    $destination,
+                    $disk,
+                    1024
+                );
+
+                $filename = basename($written);
+
+                // The reducer switches to .webp when the driver supports it,
+                // so the stored mime is not necessarily the uploaded one.
+                // Record what is actually on disk — the view route serves this
+                // as the Content-Type, and a wrong one breaks rendering.
+                if (strtolower(pathinfo($filename, PATHINFO_EXTENSION)) === 'webp') {
+                    $mime = 'image/webp';
+                }
+            } catch (\Throwable $e) {
+                // Compression is an optimisation, not a requirement. If the
+                // image driver is unavailable or cannot handle this file, keep
+                // the original bytes rather than failing the upload — an
+                // applicant losing a valid document to a server-side encoder
+                // problem is the worse outcome.
+                report($e);
+
+                $file->storeAs(dirname($destination), $filename, $disk);
+            }
+        } else {
+            $file->storeAs(dirname($destination), $filename, $disk);
+        }
+
+        $storedPath = dirname($destination) . '/' . $filename;
+
+        return [
+            'file' => $filename,
+            'mime' => $mime,
+            // Size of what was actually written, not what was uploaded — an
+            // image is smaller after compression, and this figure is shown
+            // back to the applicant.
+            'size' => Storage::disk($disk)->size($storedPath),
+            'original_name' => $file->getClientOriginalName(),
+        ];
+    }
+
     /**
      * Serve an asset (like a logo or background image) from storage.
      *

@@ -262,6 +262,18 @@
 
                     <h6
                         class="d-flex justify-content-between align-items-center px-3 mt-2 mb-1 text-body-light text-uppercase">
+                        <span>Documents</span>
+                    </h6>
+                    <li class="nav-item"><a
+                            href="{{ Route::has('documents.index') ? route('documents.index') : '#' }}"
+                            class="nav-link align-items-center gap-2 {{ Route::is('documents.index') ? 'active' : '' }}">My
+                            Documents</a>
+                    </li>
+
+                    <hr class="my-3">
+
+                    <h6
+                        class="d-flex justify-content-between align-items-center px-3 mt-2 mb-1 text-body-light text-uppercase">
                         <span>Work</span>
                     </h6>
                     <li class="nav-item"><a

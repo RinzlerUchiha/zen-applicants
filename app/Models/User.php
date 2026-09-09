@@ -98,6 +98,11 @@ class User extends Authenticatable
         return $this->hasMany(Certificate::class, 'app_id', 'app_id');
     }
 
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'app_id', 'app_id');
+    }
+
     public function employmentRec()
     {
         return $this->hasMany(EmploymentRec::class, 'app_id', 'app_id');

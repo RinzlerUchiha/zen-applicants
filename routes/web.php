@@ -8,6 +8,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CharacterRefController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\DiscController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EducationController;
 use App\Http\Controllers\EligibilityController;
 use App\Http\Controllers\EmploymentRecController;
@@ -60,6 +61,11 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::get('/profile/education', [EducationController::class, 'index'])->name('education.index');
     Route::post('/profile/education', [EducationController::class, 'store'])->name('education.store');
     Route::delete('/profile/education/{id}', [EducationController::class, 'delete'])->name('education.delete');
+
+    Route::get('/profile/documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::post('/profile/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::get('/profile/documents/{id}/view', [DocumentController::class, 'view'])->name('documents.view');
+    Route::delete('/profile/documents/{id}', [DocumentController::class, 'delete'])->name('documents.delete');
 
     Route::get('/professional/license', [EligibilityController::class, 'index'])->name('license.index');
     Route::post('/professional/license', [EligibilityController::class, 'store'])->name('license.store');
