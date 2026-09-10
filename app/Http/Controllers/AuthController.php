@@ -28,6 +28,24 @@ class AuthController extends Controller
             session(['intended_job_id' => $request->query('job')]);
         }
 
+        // The job posting is the source of truth for what the applicant is
+        // applying to. Resolving it here means the form can show the position
+        // rather than asking the applicant to type one, which could otherwise
+        // disagree with the posting the application is actually attached to.
+        $intendedJobId = session('intended_job_id');
+        $posting = $intendedJobId
+            ? DB::connection('zen')->table('tbl_job_posting')
+                ->where('id', $intendedJobId)
+                ->where('status', 'Published')
+                ->first()
+            : null;
+
+        // A posting that has closed since they clicked through is no longer a
+        // valid target — drop it rather than attach the application to it.
+        if ($intendedJobId && !$posting) {
+            session()->forget('intended_job_id');
+        }
+
         $provinceList = DB::connection('zen')->table('tbl_province')->get();
         $municipalityList = DB::connection('zen')->table('tbl_municipality as a')
             ->leftJoin('tbl_province as b', 'pr_code', '=', 'ct_province')
@@ -37,7 +55,7 @@ class AuthController extends Controller
             ->leftJoin('tbl_municipality as b', 'ct_id', '=', 'br_city')
             ->select('a.*', 'b.ct_name as br_city_name')
             ->get();
-        return view('auth.register', compact('provinceList', 'municipalityList', 'barangayList'));
+        return view('auth.register', compact('provinceList', 'municipalityList', 'barangayList', 'posting'));
     }
 
     public function login(Request $request)

@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -150,7 +150,7 @@
         </script>
     @endif
     <div class="w-100 h-100 position-relative">
-        <button class="btn btn-secondary position-absolute top-0 start-50 translate-middle-x"
+        <button class="zn-btn zn-btn-out position-absolute top-0 start-50 translate-middle-x"
             style="{{ $answer ? 'display: none;' : '' }}" id="btn-start">Start Timer</button>
         @if (!$answer)
             <form id="form-maya" class="ms-md-5 mb-5" style="{{ !$answer ? 'display: none;' : '' }}"
@@ -163,7 +163,7 @@
                     </div>
                     <div id="maya-list" class="d-flex gap-3" style="width: fit-content;">
                         @if (!$answer)
-                            <button class="btn btn-outline-primary my-auto" type="button" id="btn-prev"
+                            <button class="zn-btn zn-btn-out my-auto" type="button" id="btn-prev"
                                 style="height: fit-content;" disabled>Prev</button>
                         @endif
 
@@ -183,7 +183,7 @@
                                                 value="{{ $o }}"
                                                 autocomplete="off"
                                                 {{ ($answer?->maya_ans[$s . $i] ?? '') == $o ? 'checked' : '' }}>
-                                            <label class="btn btn-outline-secondary btn-lg"
+                                            <label class="zn-btn zn-btn-out"
                                                 for="opt-{{ $s . '-' . $i . '-' . $o }}">{{ $o }}</label>
                                         @endforeach
                                     </div>
@@ -192,9 +192,9 @@
                         @endforeach
 
                         @if (!$answer)
-                            <button class="btn btn-outline-primary my-auto" type="button" id="btn-next"
+                            <button class="zn-btn zn-btn-out my-auto" type="button" id="btn-next"
                                 style="height: fit-content;">Next</button>
-                            <button class="btn btn-primary my-auto ms-3" type="submit" id="btn-submit"
+                            <button class="zn-btn my-auto ms-3" type="submit" id="btn-submit"
                                 style="height: fit-content; display: none;">Submit</button>
                         @endif
                     </div>
@@ -203,8 +203,8 @@
         @else
             <div id="maya-answers" class="d-flex text-nowrap" style="width: fit-content;">
                 @foreach ($answerList as $s => $set)
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="zn-card">
+                        <div class="zn-card-subhead">
                             Set {{ strtoupper($s) }}
                         </div>
                         <ul class="list-group list-group-flush">

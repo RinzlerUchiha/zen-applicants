@@ -1,169 +1,171 @@
-@extends('layouts.layout')
+@extends('layouts.form-section')
 
-@section('content')
+@section('title', 'Certificates / Trainings')
 
-<style>
-    #form-certificate input,
-    #form-certificate select,
-    #certificate-list {
-        font-size: 12px;
+@section('section')
+
+<p class="zn-help" style="margin-top:0">Trainings and seminars you have completed. Leave this empty if you have none yet.</p>
+
+{{-- Saved entries. Cards rather than a table: the same layout reads on a
+     phone without horizontal scrolling, and each entry can carry its own
+     actions. --}}
+<div id="certificate-list">
+    @forelse ($certificate as $list)
+        <div class="zn-entry">
+            <div class="zn-entry-head">
+                <div>
+                    <p class="zn-entry-title">{{ $list->cert_title }}</p>
+                    <p class="zn-entry-sub">{{ $list->cert_address ?: '—' }}</p>
+                </div>
+                <div class="zn-entry-actions">
+                    <button type="button" class="zn-link" style="font-size:12px"
+                            data-certid="{{ $list->cert_id }}"
+                            data-title="{{ $list->cert_title }}"
+                            data-location="{{ $list->cert_address }}"
+                            data-completiondate="{{ $list->cert_date }}"
+                            data-speaker="{{ $list->cert_speaker }}"
+                            data-attachment="{{ $list->cert_file }}"
+                            onclick="edit_certificate(this)">Edit</button>
+                    <button type="button" class="zn-link" style="font-size:12px;color:var(--zn-warn)"
+                            data-certid="{{ $list->cert_id }}"
+                            onclick="remove_certificate(this)">Remove</button>
+                </div>
+            </div>
+                <div class="zn-entry-facts">
+                    <div>
+                        <span class="zn-fact-label">Completed</span>
+                        <span class="zn-fact-value @if(!$list->cert_date) empty @endif">{{ $list->cert_date ?: 'Not provided' }}</span>
+                    </div>
+                    <div>
+                        <span class="zn-fact-label">Speaker</span>
+                        <span class="zn-fact-value @if(!$list->cert_speaker) empty @endif">{{ $list->cert_speaker ?: 'Not provided' }}</span>
+                    </div>
+                    @if ($list->cert_file)
+                        <div>
+                            <span class="zn-fact-label">Attachment</span>
+                            <a class="zn-link" style="font-size:13px" target="_blank" rel="noopener"
+                               href="{{ url('/file/certificate/' . $list->cert_file) }}">View file</a>
+                        </div>
+                    @endif
+                </div>
+        </div>
+    @empty
+        <div class="zn-empty">
+            <b>No certificates or trainings added.</b>
+            Use the button below to add your first one.
+        </div>
+    @endforelse
+
+    <div class="zn-addbar" style="margin-top:14px">
+        <div>
+            <h3>Add another certificate</h3>
+            <p>You can add as many as you need.</p>
+        </div>
+        <button type="button" class="zn-btn zn-btn-out zn-btn-sm" onclick="add_certificate()">
+            <i class="bi bi-plus-lg"></i> Add certificate
+        </button>
+    </div>
+</div>
+
+{{-- Add / edit form. Hidden until the applicant chooses to add or edit, so
+     the page opens on what they have already saved. --}}
+<div id="form-certificate-wrap" class="zn-card d-none">
+    <div class="zn-section"><h5 id="form-certificate-heading">Add certificate</h5></div>
+
+    <form id="form-certificate" method="POST" action="{{ route('certificate.store') }}" enctype="multipart/form-data">
+        @csrf
+        <input type="hidden" name="certificate-id" id="certificate-id">
+            <input type="hidden" name="certificate-attachment-current" id="certificate-attachment-current">
+
+        <div class="zn-grid">
+            <div class="zn-fld zn-col-6">
+                <label for="certificate-title">Title <span class="zn-req">*</span></label>
+                <input type="text" name="certificate-title" id="certificate-title">
+            </div>
+            <div class="zn-fld zn-col-3">
+                <label for="certificate-completion-date">Completion date <span class="zn-req">*</span></label>
+                <input type="date" name="certificate-completion-date" id="certificate-completion-date">
+            </div>
+            <div class="zn-fld zn-col-3">
+                <label for="certificate-location">Location <span class="zn-opt">optional</span></label>
+                <input type="text" name="certificate-location" id="certificate-location">
+            </div>
+            <div class="zn-fld zn-col-6">
+                <label for="certificate-speaker">Speaker <span class="zn-opt">optional</span></label>
+                <input type="text" name="certificate-speaker" id="certificate-speaker">
+            </div>
+            <div class="zn-fld zn-col-6">
+                <label for="certificate-attachment">Attachment <span class="zn-opt">optional</span></label>
+                <input type="file" name="certificate-attachment" id="certificate-attachment" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+        </div>
+
+        <div class="zn-formnav">
+            <span class="zn-formnav-hint"><span class="zn-req">*</span> Required</span>
+            <div class="d-flex gap-2">
+                <button type="button" class="zn-btn zn-btn-out zn-btn-sm" id="btn-cancel-edit-certificate">Cancel</button>
+                <button type="submit" class="zn-btn zn-btn-sm">Save certificate</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+    function show_certificate_form(heading) {
+        document.getElementById('form-certificate-heading').textContent = heading;
+        document.getElementById('form-certificate-wrap').classList.remove('d-none');
+        document.getElementById('certificate-list').classList.add('d-none');
+        document.getElementById('form-certificate-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    #certificate-list {
-        min-width: 50vw;
-        width: fit-content;
-    }
-</style>
-
-<script type="text/javascript">
-    $(function(){
-        $('#btn-cancel-edit-certificate').click(function(){
-            $('#form-certificate input, #form-certificate select').val('');
-            $('#form-certificate').toggleClass('d-none');
-            $('#certificate-list').toggleClass('d-none');
+    function add_certificate() {
+        document.querySelectorAll('#form-certificate input, #form-certificate select').forEach(function (el) {
+            if (el.type !== 'hidden' || el.id === 'certificate-id') el.value = '';
         });
-    });
+        show_certificate_form('Add certificate');
+    }
 
     function edit_certificate(e) {
-        $('#certificate-id').val($(e).data('certid'));
-        $('#certificate-title').val($(e).data('title'));
-        $('#certificate-completion-date').val($(e).data('completiondate'));
-        $('#certificate-location').val($(e).data('location'));
-        $('#certificate-speaker').val($(e).data('speaker'));
-        $('#certificate-attachment-current').val($(e).data('attachment'));
-
-        $('#form-certificate').toggleClass('d-none');
-        $('#certificate-list').toggleClass('d-none');
+        document.getElementById('certificate-id') && (document.getElementById('certificate-id').value = e.dataset.certid || '');
+        document.getElementById('title') && (document.getElementById('title').value = e.dataset.title || '');
+        document.getElementById('location') && (document.getElementById('location').value = e.dataset.location || '');
+        document.getElementById('completiondate') && (document.getElementById('completiondate').value = e.dataset.completiondate || '');
+        document.getElementById('speaker') && (document.getElementById('speaker').value = e.dataset.speaker || '');
+        document.getElementById('attachment') && (document.getElementById('attachment').value = e.dataset.attachment || '');
+        show_certificate_form('Edit certificate');
     }
 
     async function remove_certificate(e) {
-        if (confirm('Are you sure you want to delete this post?')) {
-            try {
-                const url = @json(route('certificate.delete', ['id' => ':id'])).replace(':id', $(e).data('certid'));
-                const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    },
-                });
+        if (!confirm('Remove this certificate? This cannot be undone.')) return;
 
-                const data = await response.json();
+        try {
+            const url = @json(route('certificate.delete', ['id' => ':id'])).replace(':id', e.dataset.certid);
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+            });
+            const data = await response.json();
 
-                if (data.success) {
-                    $(e).closest('tr').remove();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to remove record.');
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Could not remove that entry: ' + (data.error || 'unknown error'));
             }
+        } catch (error) {
+            console.error(error);
+            alert('Could not remove that entry. Please try again.');
         }
     }
+
+    document.getElementById('btn-cancel-edit-certificate').addEventListener('click', function () {
+        document.getElementById('form-certificate-wrap').classList.add('d-none');
+        document.getElementById('certificate-list').classList.remove('d-none');
+    });
 </script>
-
-<div id="certificate-list">
-    @if(session('success'))
-        <div style="color: green;">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <table class="table table-sm table-striped table-hover" id="certificate-list-table">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Completion Date</th>
-                <th>Location of Event/Course</th>
-                <th>Speaker</th>
-                <th>Attachment</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($certificate as $list)
-            <tr>
-                <td class="text-nowrap">{{ $list->cert_title }}</td>
-                <td class="text-nowrap">{{ $list->cert_date }}</td>
-                <td class="text-nowrap">{{ $list->cert_address }}</td>
-                <td class="text-nowrap">{{ $list->cert_speaker }}</td>
-                <td>
-                    @if($list->cert_file)
-                        <embed src="{{ '/file/get/certificate/'.$list->cert_file }}" style="max-width: 100%; height: 150px;">
-                    @endif
-                </td>
-                <td>
-                    <div class="d-flex">
-                        <button type="button" class="btn btn-outline-secondary btn-sm m-1"
-                        data-certid="{{ $list->cert_id }}"
-                        data-title="{{ $list->cert_title }}"
-                        data-completiondate="{{ $list->cert_date }}"
-                        data-location="{{ $list->cert_address }}"
-                        data-speaker="{{ $list->cert_speaker }}"
-                        data-attachment="{{ $list->cert_file }}"
-                        onclick="edit_certificate(this)">Edit</button>
-                        <button type="button" class="btn btn-outline-danger btn-sm m-1" data-certid="{{ $list->cert_id }}" onclick="remove_certificate(this)">Remove</button>
-                    </div>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-    <button class="btn btn-outline-secondary btn-sm" onclick="edit_certificate(this)">Add</button>
-</div>
-
-<form id="form-certificate" enctype="multipart/form-data" name="form-certificate" method="post" action="{{ route('certificate.store') }}" class="mb-3 d-none">
-    @csrf
-    <input type="hidden" name="certificate-id" id="certificate-id" value="">
-    <div class="row g-3">
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="text" class="form-control-plaintext border-bottom" name="certificate-title" id="certificate-title">
-                <label for="certificate-title">Title</label>
-            </div>
-        </div>
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="date" class="form-control-plaintext border-bottom" name="certificate-completion-date" id="certificate-completion-date">
-                <label for="certificate-completion-date">Completion Date</label>
-            </div>
-        </div>
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="text" class="form-control-plaintext border-bottom" name="certificate-location" id="certificate-location">
-                <label for="certificate-location">Location of Event/Course</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-3">
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="text" class="form-control-plaintext border-bottom" name="certificate-speaker" id="certificate-speaker">
-                <label for="certificate-speaker">Speaker</label>
-            </div>
-        </div>
-        
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="file" class="form-control-plaintext border-bottom" name="certificate-attachment" id="certificate-attachment">
-                <input type="hidden" name="certificate-attachment-current" id="certificate-attachment-current">
-                <label for="certificate-attachment">Attachment</label>
-            </div>
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-primary btn-sm">Save</button>
-    <button type="button" class="btn btn-danger btn-sm" id="btn-cancel-edit-certificate">Cancel</button>
-</form>
-
-@stop
+@endpush

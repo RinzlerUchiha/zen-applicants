@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -113,7 +113,7 @@
 </script>
 @endif
 <div class="w-100 h-100 position-relative">
-    <button class="btn btn-secondary position-absolute top-0 start-50 translate-middle-x" style="{{ $answer ? 'display: none;' : '' }}" id="btn-start">Start Timer</button>
+    <button class="zn-btn zn-btn-out position-absolute top-0 start-50 translate-middle-x" style="{{ $answer ? 'display: none;' : '' }}" id="btn-start">Start Timer</button>
     <div class="border border-3 border-danger text-danger rounded p-1 position-sticky bg-white" id="timer" style="display: none;">00:10:00</div>
     <form id="form-abstract-reasoning" class="ms-md-5 mb-5" style="{{ !$answer ? 'display: none;' : '' }}" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
@@ -129,9 +129,9 @@
                 <div class="row ps-5 mb-5">
                 @foreach ($item['option'] as $o => $opt)
                     <div class="col-auto">
-                        <div class="form-check">
+                        <div class="form-check zn-option">
                             <input class="btn-check abstract-reasoning-ans-{{ $i }}" type="radio" value="{{ $o }}" id="opt-{{ $i.'-'.$o }}" name="opt-{{ $i }}" autocomplete="off" {{ ($answer?->abstract_ans[$i] ?? '') == $o ? 'checked' : '' }} required>
-                            <label class="btn btn-outline-secondary" for="opt-{{ $i.'-'.$o }}">{{ $o.')' }} <img src="{{ $opt }}" class="img-fluid rounded"></label>
+                            <label class="zn-btn zn-btn-out" for="opt-{{ $i.'-'.$o }}">{{ $o.')' }} <img src="{{ $opt }}" class="img-fluid rounded"></label>
                         </div>
                     </div>
                 @endforeach
@@ -141,7 +141,7 @@
         @if (!$answer)
             <br>
             <div class="d-flex justify-content-center gap-5">
-                <button class="btn btn-primary" type="submit">Submit</button>
+                <button class="zn-btn" type="submit">Submit</button>
             </div>
         @endif
     </form>

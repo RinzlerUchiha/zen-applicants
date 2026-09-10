@@ -1,542 +1,625 @@
-<!DOCTYPE html>
-<html>
+@extends('layouts.app')
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Application</title>
+@section('title', 'Create your applicant profile')
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+@section('body')
+<main class="zn-canvas">
+    <div class="zn-narrow">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
-        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous">
-    </script>
+        <div class="zn-formhead">
+            <div>
+                <p class="zn-page-title" style="margin-bottom:3px">Create your applicant profile</p>
+                <p class="zn-page-sub" style="margin-bottom:0">
+                    You only fill this in once — it carries over to every position you apply to.
+                </p>
+            </div>
+            <span class="zn-count">Already have a profile?
+                <a class="zn-link" href="{{ route('login') }}">Sign in</a></span>
+        </div>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/js/all.min.js"
-        integrity="sha512-b+nQTCdtTBIRIbraqNEwsjB6UvL3UEMkXnhzd8awtCYh0Kcsjl9uEgwVFVbhoj3uu1DO1ZMacNvLoyJJiNfcvg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        @if (session('success'))
+            <div class="zn-toast"><i class="bi bi-check-circle-fill"></i> {{ session('success') }}</div>
+        @endif
+        @if ($errors->any())
+            <div class="zn-toast error" style="display:block">
+                <b><i class="bi bi-exclamation-circle-fill"></i> Please check the highlighted fields</b>
+                <ul style="font-weight:400;margin-top:5px">
+                    @foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                </ul>
+            </div>
+        @endif
 
+        <form id="form-personal" action="{{ route('register.store') }}" method="POST" novalidate>
+            @csrf
+            {{-- Set by the password modal after the privacy notice is acknowledged. --}}
+            <input type="password" name="app-code" id="app-code" class="d-none" autocomplete="new-password">
+            <input type="hidden" name="privacy-acknowledged" id="privacy-acknowledged" value="{{ old('privacy-acknowledged') }}">
 
-    <style>
-        #form-personal input,
-        #form-personal select {
-            font-size: 12px;
-        }
+            <fieldset class="border-0 p-0 m-0">
 
-        #form-personal .form-floating>label {
-            font-size: 14px;
-        }
+                {{-- ============ Position and name ============ --}}
+                <section class="zn-card zn-formcard">
+                    <div class="zn-section"><h5>The position</h5></div>
 
-        #personal-img-preview:hover {
-            transform: scale(1.7);
-        }
-
-        .form-control-plaintext.border-bottom {
-            padding-bottom: 1px !important;
-        }
-    </style>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.select-province').forEach(function(selectProvince) {
-                selectProvince.addEventListener('change', function() {
-                    let row = selectProvince.closest('.row');
-                    let selectCity = row.querySelector('.select-city');
-
-                    let optionsCity = selectCity.querySelectorAll('option');
-                    optionsCity.forEach(function(option) {
-                        if (option.value !== "") {
-                            option.style.display = 'none';
-                        }
-                    });
-
-                    let matchingOptions = selectCity.querySelectorAll('option[province="' +
-                        selectProvince.value + '"]');
-                    matchingOptions.forEach(function(option) {
-                        option.style.display = 'block';
-                    });
-                });
-            });
-
-            document.querySelectorAll('.select-city').forEach(function(selectCity) {
-                selectCity.addEventListener('change', function() {
-                    let row = selectCity.closest('.row');
-                    let selectBarangay = row.querySelector('.select-barangay');
-
-                    let optionsBarangay = selectBarangay.querySelectorAll('option');
-                    optionsBarangay.forEach(function(option) {
-                        if (option.value !== "") {
-                            option.style.display = 'none';
-                        }
-                    });
-
-                    let matchingOptionsBarangay = selectBarangay.querySelectorAll('option[city="' +
-                        selectCity.value + '"]');
-                    matchingOptionsBarangay.forEach(function(option) {
-                        option.style.display = 'block';
-                    });
-                });
-            });
-
-            document.getElementById('personal-birthdate').addEventListener('change', function() {
-                // Get the birthdate from the input field
-                const birthdate = this.value;
-
-
-                // If no birthdate is selected, alert the user
-                if (!birthdate) {
-                    document.getElementById("personal-age").value = '';
-                    return;
-                }
-
-                // Convert the input string (YYYY-MM-DD) into a Date object
-                const birthDateObj = new Date(birthdate);
-
-                // Get today's date
-                const today = new Date();
-
-                // Calculate the age difference in years
-                let age = today.getFullYear() - birthDateObj.getFullYear();
-
-                // Adjust the age if the birthday hasn't occurred yet this year
-                const monthDifference = today.getMonth() - birthDateObj.getMonth();
-                const dayDifference = today.getDate() - birthDateObj.getDate();
-
-                // If the birthdate hasn't occurred yet this year, subtract 1 from the age
-                if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
-                    age--;
-                }
-
-                // Display the result
-                document.getElementById("personal-age").value = age;
-            });
-
-            document.getElementById('btn-set-pass').addEventListener('click', function() {
-                if(document.getElementById('input-set-pass').value){
-                    document.getElementById('app-code').value = document.getElementById('input-set-pass').value;
-                    document.getElementById('form-personal').submit();
-                }
-            });
-
-            document.getElementById('btn-show-set-pass').addEventListener('click', function() {
-                if(document.getElementById('form-personal').reportValidity()){
-                    document.getElementById('input-set-pass').value = '';
-                    let myModal = new bootstrap.Modal(document.getElementById('setPassModal'));
-                    myModal.show();
-                }
-            });
-
-        });
-    </script>
-</head>
-
-<body>
-    <div class="container-fluid pt-3">
-        <div class="row justify-content-md-center">
-            <div class="col-md-8">
-                <div class="d-flex justify-content-end">
-                    <a href="{{ route('login') }}" class="btn btn-outline-primary">Login</a>
-                </div>
-
-                <form id="form-personal" class="mb-3" action="{{ route('register.store') }}" method="POST">
-                    <!-- Success Message -->
-                    @if (session('success'))
-                        <div style="color: green;">
-                            {{ session('success') }}
+                    @if ($posting)
+                        {{-- Taken from the posting the applicant clicked through
+                             from. Not editable: the posting is the source of
+                             truth, and a typed value could disagree with the
+                             posting the application is actually attached to. --}}
+                        <div class="zn-locked-field">
+                            <div>
+                                <span class="zn-locked-label">Applying for</span>
+                                <b>{{ $posting->posting_title }}</b>
+                                <span class="zn-locked-meta">
+                                    This application will be linked to this posting.
+                                    <a class="zn-link" href="{{ route('careers.show', $posting->id) }}"
+                                       target="_blank" rel="noopener">View posting</a>
+                                </span>
+                            </div>
+                            <span class="zn-pill zn-pill-acc"><i class="bi bi-lock-fill"></i> From posting</span>
+                        </div>
+                        <input type="hidden" name="position-applied" value="{{ $posting->posting_title }}">
+                    @else
+                        {{-- No posting chosen — they came straight to /apply. We
+                             create the profile without a position rather than
+                             inviting free text that matches no posting. --}}
+                        <div class="zn-locked-field muted">
+                            <div>
+                                <span class="zn-locked-label">No position selected</span>
+                                <b>You're creating a profile only</b>
+                                <span class="zn-locked-meta">
+                                    That's fine — you can apply to any position after this.
+                                    <a class="zn-link" href="{{ route('careers.index') }}">Browse open positions</a>
+                                </span>
+                            </div>
+                            <span class="zn-pill zn-pill-opt">Optional</span>
                         </div>
                     @endif
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                    @csrf
-                    <fieldset>
-                        <input type="password" name="app-code" id="app-code" style="display: none;">
-                        <div class="row g-3">
-                            <div class="col">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="position-applied" id="position-applied" value="{{ old('position-applied') }}" required>
-                                    <label for="position-applied">Position Applied</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-firstname" id="personal-firstname" value="{{ old('personal-firstname') }}">
-                                    <label for="personal-firstname">First Name</label>
-                                </div>
-                            </div>
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-middlename" id="personal-middlename" value="{{ old('position-middlename') }}">
-                                    <label for="personal-middlename">Middle Name</label>
-                                </div>
-                            </div>
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-lastname" id="personal-lastname" value="{{ old('position-lastname') }}">
-                                    <label for="personal-lastname">Last Name</label>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-suffix" id="personal-suffix" value="{{ old('position-suffix') }}">
-                                    <label for="personal-suffix">Suffix</label>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- contact -->
-                        <h6 class="mt-3">Contact Info</h6>
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="form-floating mb-3">
-                                    <input type="email" class="form-control-plaintext border-bottom"
-                                        name="personal-email" id="personal-email" value="{{ old('position-email') }}">
-                                    <label for="personal-email">Email</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-contact" id="personal-contact" value="{{ old('position-contact') }}">
-                                    <label for="personal-contact">Personal Contact</label>
-                                </div>
-                            </div>
-                            <div class="col-md">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-telephone" id="personal-telephone" value="{{ old('position-telephone') }}">
-                                    <label for="personal-telephone">Telephone</label>
-                                </div>
-                            </div>
+                    <div class="zn-section mt-4"><h5>Your name</h5></div>
+
+                    <div class="zn-grid">
+                        <div class="zn-fld zn-col-4">
+                            <label for="personal-firstname">First name <span class="zn-req">*</span></label>
+                            <input type="text" name="personal-firstname" id="personal-firstname"
+                                   value="{{ old('personal-firstname') }}">
                         </div>
-
-                        <!-- address -->
-                        <h6 class="mt-3">Permanent Address</h6>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-province"
-                                        name="personal-padd-province" id="personal-padd-province" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($provinceList as $list)
-                                            <option value="{{ $list->pr_name }}" {{ old('personal-padd-province' == $list->pr_name ? 'selected' : '') }}>{{ $list->pr_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-padd-province">Province</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-city"
-                                        name="personal-padd-city" id="personal-padd-city" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($municipalityList as $list)
-                                            <option style="display: none;" province="{{ $list->ct_province_name }}"
-                                                value="{{ $list->ct_name }}" {{ old('personal-padd-city' == $list->ct_name ? 'selected' : '') }}>{{ $list->ct_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-padd-city">City</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-barangay"
-                                        name="personal-padd-barangay" id="personal-padd-barangay" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($barangayList as $list)
-                                            <option style="display: none;" city="{{ $list->br_city_name }}"
-                                                value="{{ $list->br_name }}" {{ old('personal-padd-barangay' == $list->br_name ? 'selected' : '') }}>{{ $list->br_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-padd-barangay">Barangay</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-padd-specific" id="personal-padd-specific" value="{{ old('position-padd-specific') }}">
-                                    <label for="personal-padd-specific">Street/House #</label>
-                                </div>
-                            </div>
+                        <div class="zn-fld zn-col-4">
+                            <label for="personal-middlename">Middle name <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-middlename" id="personal-middlename"
+                                   value="{{ old('personal-middlename') }}">
                         </div>
-
-                        <h6 class="mt-3">Current Address</h6>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-province"
-                                        name="personal-cadd-province" id="personal-cadd-province" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($provinceList as $list)
-                                            <option value="{{ $list->pr_name }}" {{ old('personal-cadd-province' == $list->pr_name ? 'selected' : '') }}>{{ $list->pr_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-cadd-province">Province</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-city"
-                                        name="personal-cadd-city" id="personal-cadd-city" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($municipalityList as $list)
-                                            <option style="display: none;" province="{{ $list->ct_province_name }}"
-                                                value="{{ $list->ct_name }}" {{ old('personal-cadd-city' == $list->ct_name ? 'selected' : '') }}>{{ $list->ct_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-cadd-city">City</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-barangay"
-                                        name="personal-cadd-barangay" id="personal-cadd-barangay" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($barangayList as $list)
-                                            <option style="display: none;" city="{{ $list->br_city_name }}"
-                                                value="{{ $list->br_name }}" {{ old('personal-cadd-barangay' == $list->br_name ? 'selected' : '') }}>{{ $list->br_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-cadd-barangay">Barangay</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-cadd-specific" id="personal-cadd-specific" value="{{ old('position-cadd-specific') }}">
-                                    <label for="personal-cadd-specific">Street/House #</label>
-                                </div>
-                            </div>
+                        <div class="zn-fld zn-col-4">
+                            <label for="personal-lastname">Last name <span class="zn-req">*</span></label>
+                            <input type="text" name="personal-lastname" id="personal-lastname"
+                                   value="{{ old('personal-lastname') }}">
                         </div>
-
-                        <h6 class="mt-3">Place Of Birth</h6>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-province"
-                                        name="personal-badd-province" id="personal-badd-province" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($provinceList as $list)
-                                            <option value="{{ $list->pr_name }}" {{ old('personal-badd-province' == $list->pr_name ? 'selected' : '') }}>{{ $list->pr_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-badd-province">Province</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-city"
-                                        name="personal-badd-city" id="personal-badd-city" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($municipalityList as $list)
-                                            <option style="display: none;" province="{{ $list->ct_province_name }}"
-                                                value="{{ $list->ct_name }}" {{ old('personal-badd-city' == $list->ct_name ? 'selected' : '') }}>{{ $list->ct_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-badd-city">City</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom select-barangay"
-                                        name="personal-badd-barangay" id="personal-badd-barangay" aria-label="">
-                                        <option value>-Select-</option>
-                                        @foreach ($barangayList as $list)
-                                            <option style="display: none;" city="{{ $list->br_city_name }}"
-                                                value="{{ $list->br_name }}" {{ old('personal-badd-barangay' == $list->br_name ? 'selected' : '') }}>{{ $list->br_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <label for="personal-badd-barangay">Barangay</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-badd-specific" id="personal-badd-specific" value="{{ old('position-badd-specific') }}">
-                                    <label for="personal-badd-specific">Street/House #</label>
-                                </div>
-                            </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-suffix">Suffix <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-suffix" id="personal-suffix"
+                                   value="{{ old('personal-suffix') }}" placeholder="Jr., Sr., III">
                         </div>
-
-                        <!-- Basic Info -->
-                        <h6 class="mt-3">Basic Info</h6>
-                        <div class="row g-3">
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <input type="date" class="form-control-plaintext border-bottom"
-                                        name="personal-birthdate" id="personal-birthdate" value="{{ old('position-birthdate') }}">
-                                    <label for="personal-birthdate">Birth Date</label>
-                                </div>
-                            </div>
-                            <div class="col-md-1">
-                                <div class="form-floating mb-3">
-                                    <input type="text" readonly class="form-control-plaintext border-bottom"
-                                        id="personal-age" value="{{ old('position-age') }}">
-                                    <label for="personal-age">Age</label>
-                                </div>
-                            </div>
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom" name="personal-civil-status"
-                                        id="personal-civil-status" aria-label="">
-                                        <option value>-Select-</option>
-                                        <option value="Single" {{ old('personal-civil-status' == 'Single' ? 'selected' : '') }}>Single</option>
-                                        <option value="Married" {{ old('personal-civil-status' == 'Married' ? 'selected' : '') }}>Married</option>
-                                        <option value="Separated/Divorced" {{ old('personal-civil-status' == 'Separated/Divorced' ? 'selected' : '') }}>Separated/Divorced</option>
-                                        <option value="Widow/Widower" {{ old('personal-civil-status' == 'Widow/Widower' ? 'selected' : '') }}>Widow/Widower</option>
-                                    </select>
-                                    <label for="personal-civil-status">Civil Status</label>
-                                </div>
-                            </div>
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom" name="personal-sex"
-                                        id="personal-sex" aria-label="">
-                                        <option value>-Select-</option>
-                                        <option value="Male" {{ old('personal-sex' == 'Male' ? 'selected' : '') }}>Male</option>
-                                        <option value="Female" {{ old('personal-sex' == 'Female' ? 'selected' : '') }}>Female</option>
-                                    </select>
-                                    <label for="personal-sex">Sex</label>
-                                </div>
-                            </div>
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <select class="form-control-plaintext border-bottom" name="personal-bloodtype"
-                                        id="personal-bloodtype" aria-label="">
-                                        <option value>-Select-</option>
-                                        <option value="O+" {{ old('personal-bloodtype' == 'O+' ? 'selected' : '') }}>O+</option>
-                                        <option value="O-" {{ old('personal-bloodtype' == 'O-' ? 'selected' : '') }}>O-</option>
-                                        <option value="A+" {{ old('personal-bloodtype' == 'A+' ? 'selected' : '') }}>A+</option>
-                                        <option value="A-" {{ old('personal-bloodtype' == 'A-' ? 'selected' : '') }}>A-</option>
-                                        <option value="B+" {{ old('personal-bloodtype' == 'B+' ? 'selected' : '') }}>B+</option>
-                                        <option value="B-" {{ old('personal-bloodtype' == 'B-' ? 'selected' : '') }}>B-</option>
-                                        <option value="AB+" {{ old('personal-bloodtype' == 'AB+' ? 'selected' : '') }}>AB+</option>
-                                        <option value="AB-" {{ old('personal-bloodtype' == 'AB-' ? 'selected' : '') }}>AB-</option>
-                                    </select>
-                                    <label for="personal-bloodtype">Blood Type</label>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-height" id="personal-height" value="{{ old('position-height') }}">
-                                    <label for="personal-height">Height (cm)</label>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-weight" id="personal-weight" value="{{ old('position-weight') }}">
-                                    <label for="personal-weight">Weight (kg)</label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-nationality" id="personal-nationality" value="{{ old('position-nationality') }}">
-                                    <label for="personal-nationality">Dialect</label>
-                                </div>
-                            </div>
-
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-religion" id="personal-religion" value="{{ old('position-religion') }}">
-                                    <label for="personal-religion">Religion</label>
-                                </div>
-                            </div>
-                            <div class="col-md-auto">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-dialect" id="personal-dialect" value="{{ old('position-dialect') }}">
-                                    <label for="personal-dialect">Dialect</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- gov accounts -->
-                        <h6 class="mt-3">Government Identification Numbers</h6>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-sss" id="personal-sss" value="{{ old('position-sss') }}">
-                                    <label for="personal-sss">SSS #</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-hdmf" id="personal-hdmf" value="{{ old('position-hdmf') }}">
-                                    <label for="personal-hdmf">Pagibig #</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-phic" id="personal-phic" value="{{ old('position-phic') }}">
-                                    <label for="personal-phic">Philhealth #</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-floating mb-3">
-                                    <input type="text" class="form-control-plaintext border-bottom"
-                                        name="personal-tin" id="personal-tin" value="{{ old('position-tin') }}">
-                                    <label for="personal-tin">TIN #</label>
-                                </div>
-                            </div>
-                        </div>
-                    </fieldset>
-                    <div class="d-flex justify-content-center mt-3 mb-5">
-                        <button type="button" class="btn btn-primary mx-1 px-5 flex-md-grow-0 flex-grow-1"
-                            id="btn-show-set-pass">Submit</button>
                     </div>
-                </form>
+                </section>
+
+                {{-- ============ Contact ============ --}}
+                <section class="zn-card zn-formcard">
+                    <div class="zn-section"><h5>How we reach you</h5></div>
+                    <p class="zn-help">We'll use these to tell you about your application.</p>
+
+                    <div class="zn-grid">
+                        <div class="zn-fld zn-col-5">
+                            <label for="personal-email">Email <span class="zn-req">*</span></label>
+                            <input type="email" name="personal-email" id="personal-email"
+                                   value="{{ old('personal-email') }}" placeholder="you@example.com">
+                        </div>
+                        <div class="zn-fld zn-col-4">
+                            <label for="personal-contact">Mobile number <span class="zn-req">*</span></label>
+                            <input type="text" name="personal-contact" id="personal-contact"
+                                   value="{{ old('personal-contact') }}" placeholder="09#########">
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-telephone">Telephone <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-telephone" id="personal-telephone"
+                                   value="{{ old('personal-telephone') }}">
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ============ Addresses ============ --}}
+                <section class="zn-card zn-formcard">
+                    <div class="zn-section"><h5>Permanent address</h5></div>
+
+                    <div class="zn-grid">
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-padd-province">Province <span class="zn-req">*</span></label>
+                            <select class="select-province" name="personal-padd-province" id="personal-padd-province">
+                                <option value="">Select province</option>
+                                @foreach ($provinceList as $list)
+                                    <option value="{{ $list->pr_name }}" @selected(old('personal-padd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-padd-city">City / Municipality <span class="zn-req">*</span></label>
+                            <select class="select-city" name="personal-padd-city" id="personal-padd-city">
+                                <option value="">Select city</option>
+                                @foreach ($municipalityList as $list)
+                                    <option style="display:none" province="{{ $list->ct_province_name }}"
+                                            value="{{ $list->ct_name }}" @selected(old('personal-padd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-padd-barangay">Barangay <span class="zn-req">*</span></label>
+                            <select class="select-barangay" name="personal-padd-barangay" id="personal-padd-barangay">
+                                <option value="">Select barangay</option>
+                                @foreach ($barangayList as $list)
+                                    <option style="display:none" city="{{ $list->br_city_name }}"
+                                            value="{{ $list->br_name }}" @selected(old('personal-padd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-padd-specific">Street / House no. <span class="zn-req">*</span></label>
+                            <input type="text" name="personal-padd-specific" id="personal-padd-specific"
+                                   value="{{ old('personal-padd-specific') }}">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="zn-card zn-formcard">
+                    <div class="zn-formcard-head">
+                        <div class="zn-section mb-0"><h5>Current address</h5></div>
+                        {{-- Most applicants live where they're registered. One tick
+                             beats retyping four fields. --}}
+                        <label class="zn-check">
+                            <input type="checkbox" id="same-as-permanent">
+                            <span>Same as permanent address</span>
+                        </label>
+                    </div>
+
+                    <div class="zn-grid" id="current-address-fields">
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-cadd-province">Province <span class="zn-req">*</span></label>
+                            <select class="select-province" name="personal-cadd-province" id="personal-cadd-province">
+                                <option value="">Select province</option>
+                                @foreach ($provinceList as $list)
+                                    <option value="{{ $list->pr_name }}" @selected(old('personal-cadd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-cadd-city">City / Municipality <span class="zn-req">*</span></label>
+                            <select class="select-city" name="personal-cadd-city" id="personal-cadd-city">
+                                <option value="">Select city</option>
+                                @foreach ($municipalityList as $list)
+                                    <option style="display:none" province="{{ $list->ct_province_name }}"
+                                            value="{{ $list->ct_name }}" @selected(old('personal-cadd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-cadd-barangay">Barangay <span class="zn-req">*</span></label>
+                            <select class="select-barangay" name="personal-cadd-barangay" id="personal-cadd-barangay">
+                                <option value="">Select barangay</option>
+                                @foreach ($barangayList as $list)
+                                    <option style="display:none" city="{{ $list->br_city_name }}"
+                                            value="{{ $list->br_name }}" @selected(old('personal-cadd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-cadd-specific">Street / House no. <span class="zn-req">*</span></label>
+                            <input type="text" name="personal-cadd-specific" id="personal-cadd-specific"
+                                   value="{{ old('personal-cadd-specific') }}">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="zn-card zn-formcard">
+                    <div class="zn-section"><h5>Place of birth</h5></div>
+
+                    <div class="zn-grid">
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-badd-province">Province <span class="zn-opt">optional</span></label>
+                            <select class="select-province" name="personal-badd-province" id="personal-badd-province">
+                                <option value="">Select province</option>
+                                @foreach ($provinceList as $list)
+                                    <option value="{{ $list->pr_name }}" @selected(old('personal-badd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-badd-city">City / Municipality <span class="zn-opt">optional</span></label>
+                            <select class="select-city" name="personal-badd-city" id="personal-badd-city">
+                                <option value="">Select city</option>
+                                @foreach ($municipalityList as $list)
+                                    <option style="display:none" province="{{ $list->ct_province_name }}"
+                                            value="{{ $list->ct_name }}" @selected(old('personal-badd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-badd-barangay">Barangay <span class="zn-opt">optional</span></label>
+                            <select class="select-barangay" name="personal-badd-barangay" id="personal-badd-barangay">
+                                <option value="">Select barangay</option>
+                                @foreach ($barangayList as $list)
+                                    <option style="display:none" city="{{ $list->br_city_name }}"
+                                            value="{{ $list->br_name }}" @selected(old('personal-badd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-badd-specific">Street / House no. <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-badd-specific" id="personal-badd-specific"
+                                   value="{{ old('personal-badd-specific') }}">
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ============ Basic info ============ --}}
+                <section class="zn-card zn-formcard">
+                    <div class="zn-section"><h5>About you</h5></div>
+
+                    <div class="zn-grid">
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-birthdate">Birth date <span class="zn-req">*</span></label>
+                            <input type="date" name="personal-birthdate" id="personal-birthdate"
+                                   value="{{ old('personal-birthdate') }}">
+                        </div>
+                        <div class="zn-fld zn-col-2">
+                            <label for="personal-age">Age</label>
+                            {{-- Read-only: derived from birth date, not asked for. --}}
+                            <input type="text" id="personal-age" readonly tabindex="-1" placeholder="—">
+                        </div>
+                        <div class="zn-fld zn-col-4">
+                            <label for="personal-civil-status">Civil status <span class="zn-req">*</span></label>
+                            <select name="personal-civil-status" id="personal-civil-status">
+                                <option value="">Select</option>
+                                @foreach (['Single', 'Married', 'Separated/Divorced', 'Widow/Widower'] as $option)
+                                    <option value="{{ $option }}" @selected(old('personal-civil-status') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-sex">Sex <span class="zn-req">*</span></label>
+                            <select name="personal-sex" id="personal-sex">
+                                <option value="">Select</option>
+                                @foreach (['Male', 'Female'] as $option)
+                                    <option value="{{ $option }}" @selected(old('personal-sex') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-nationality">Nationality <span class="zn-req">*</span></label>
+                            <input type="text" name="personal-nationality" id="personal-nationality"
+                                   value="{{ old('personal-nationality') }}" placeholder="Filipino">
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-bloodtype">Blood type <span class="zn-opt">optional</span></label>
+                            <select name="personal-bloodtype" id="personal-bloodtype">
+                                <option value="">Select</option>
+                                @foreach (['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as $option)
+                                    <option value="{{ $option }}" @selected(old('personal-bloodtype') === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-height">Height (cm) <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-height" id="personal-height"
+                                   value="{{ old('personal-height') }}">
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-weight">Weight (kg) <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-weight" id="personal-weight"
+                                   value="{{ old('personal-weight') }}">
+                        </div>
+
+                        <div class="zn-fld zn-col-6">
+                            <label for="personal-religion">Religion <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-religion" id="personal-religion"
+                                   value="{{ old('personal-religion') }}">
+                        </div>
+                        <div class="zn-fld zn-col-6">
+                            <label for="personal-dialect">Dialect <span class="zn-opt">optional</span></label>
+                            <input type="text" name="personal-dialect" id="personal-dialect"
+                                   value="{{ old('personal-dialect') }}">
+                        </div>
+                    </div>
+                </section>
+
+                {{-- ============ Government IDs ============ --}}
+                <section class="zn-card zn-formcard">
+                    <div class="zn-section"><h5>Government ID numbers</h5></div>
+                    <p class="zn-help">
+                        All optional. If you're applying for your first job you may not have these yet —
+                        leave them blank and you can add them later.
+                    </p>
+
+                    <div class="zn-grid">
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-sss">SSS number</label>
+                            <input type="text" name="personal-sss" id="personal-sss" value="{{ old('personal-sss') }}">
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-hdmf">Pag-IBIG number</label>
+                            <input type="text" name="personal-hdmf" id="personal-hdmf" value="{{ old('personal-hdmf') }}">
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-phic">PhilHealth number</label>
+                            <input type="text" name="personal-phic" id="personal-phic" value="{{ old('personal-phic') }}">
+                        </div>
+                        <div class="zn-fld zn-col-3">
+                            <label for="personal-tin">TIN</label>
+                            <input type="text" name="personal-tin" id="personal-tin" value="{{ old('personal-tin') }}">
+                        </div>
+                    </div>
+                </section>
+
+            </fieldset>
+
+            <div class="zn-submitbar">
+                <span class="zn-formnav-hint">
+                    <span class="zn-req">*</span> Required. You can change any of this later from your profile.
+                </span>
+                <button type="button" class="zn-btn" id="btn-show-privacy">Create my profile</button>
+            </div>
+        </form>
+
+    </div>
+</main>
+
+{{-- ============ Privacy notice, shown before anything is created ============ --}}
+<div class="modal fade" id="privacyModal" data-bs-backdrop="static" data-bs-keyboard="false"
+     tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content zn-modal">
+            <div class="modal-header">
+                <h1 class="modal-title" id="privacyModalLabel">Before you continue</h1>
+            </div>
+            <div class="modal-body">
+                <p class="zn-modal-lede">
+                    We're about to collect personal information from you. Here's what happens to it —
+                    in plain terms.
+                </p>
+
+                <div class="zn-privacy-points">
+                    <div class="zn-privacy-point">
+                        <span class="zn-privacy-ico"><i class="bi bi-clipboard-check"></i></span>
+                        <div>
+                            <b>What we collect and why</b>
+                            <span>Your personal details, background and documents, so we can assess and
+                                process your application, contact you about it, and keep your profile for
+                                future positions you apply to.</span>
+                        </div>
+                    </div>
+                    <div class="zn-privacy-point">
+                        <span class="zn-privacy-ico"><i class="bi bi-people"></i></span>
+                        <div>
+                            <b>Who sees it</b>
+                            <span>The HR and recruitment personnel handling your application, and the
+                                hiring managers for the role. We don't sell it or use it for marketing.</span>
+                        </div>
+                    </div>
+                    <div class="zn-privacy-point">
+                        <span class="zn-privacy-ico"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                            <b>How it's handled</b>
+                            <span>We process it lawfully under the Data Privacy Act of 2012 (RA 10173) and
+                                apply measures intended to protect it against unauthorised access, loss
+                                or misuse.</span>
+                        </div>
+                    </div>
+                    <div class="zn-privacy-point">
+                        <span class="zn-privacy-ico"><i class="bi bi-person-check"></i></span>
+                        <div>
+                            <b>Your rights</b>
+                            <span>You can access your information, correct it, object to how it's used,
+                                and complain to the National Privacy Commission. You can view and edit
+                                your profile any time after signing in.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="zn-modal-foot">
+                    This is a summary. Please read the
+                    <a class="zn-link" href="{{ route('privacy') }}" target="_blank" rel="noopener">full Privacy Notice</a>
+                    for the complete details, including how to reach our Data Protection Officer.
+                </p>
+
+                <label class="zn-check zn-check-lg">
+                    <input type="checkbox" id="privacy-agree">
+                    <span>I've read and understood how my information will be collected and processed,
+                        and I agree to continue.</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="zn-btn zn-btn-out zn-btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="zn-btn zn-btn-sm" id="btn-privacy-continue" disabled>Continue</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="setPassModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-        aria-labelledby="setPassModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="setPassModalLabel">Set Password</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+{{-- ============ Password, after the notice is acknowledged ============ --}}
+<div class="modal fade" id="setPassModal" data-bs-backdrop="static" data-bs-keyboard="false"
+     tabindex="-1" aria-labelledby="setPassModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content zn-modal">
+            <div class="modal-header">
+                <h1 class="modal-title" id="setPassModalLabel">Choose a password</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="zn-modal-lede">
+                    You'll use this with your email or mobile number to sign back in and follow your
+                    application.
+                </p>
+                <div class="zn-fld mb-0">
+                    <label for="input-set-pass">Password</label>
+                    <input type="password" id="input-set-pass" autocomplete="new-password">
+                    <p class="zn-fld-hint" id="pass-hint">At least 8 characters.</p>
                 </div>
-                <div class="modal-body">
-                    <input type="password" class="form-control" id="input-set-pass">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="btn-set-pass">Proceed</button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="zn-btn zn-btn-out zn-btn-sm" data-bs-dismiss="modal">Back</button>
+                <button type="button" class="zn-btn zn-btn-sm" id="btn-set-pass">Create profile</button>
             </div>
         </div>
     </div>
-</body>
+</div>
+@endsection
 
-</html>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* ---- Address cascade: province filters city, city filters barangay ----
+       Preserved from the original implementation. Each address block has its
+       own province/city/barangay trio, matched by the shared classes. */
+    document.querySelectorAll('.select-province').forEach(function (selectProvince) {
+        selectProvince.addEventListener('change', function () {
+            const group = this.closest('.zn-grid');
+            const selectCity = group.querySelector('.select-city');
+            const selectBarangay = group.querySelector('.select-barangay');
+
+            selectCity.value = '';
+            selectBarangay.value = '';
+
+            selectCity.querySelectorAll('option[province]').forEach(function (option) {
+                option.style.display = option.getAttribute('province') === selectProvince.value ? '' : 'none';
+            });
+            selectBarangay.querySelectorAll('option[city]').forEach(function (option) {
+                option.style.display = 'none';
+            });
+        });
+    });
+
+    document.querySelectorAll('.select-city').forEach(function (selectCity) {
+        selectCity.addEventListener('change', function () {
+            const group = this.closest('.zn-grid');
+            const selectBarangay = group.querySelector('.select-barangay');
+
+            selectBarangay.value = '';
+            selectBarangay.querySelectorAll('option[city]').forEach(function (option) {
+                option.style.display = option.getAttribute('city') === selectCity.value ? '' : 'none';
+            });
+        });
+    });
+
+    // Re-apply the filters on load so a validation bounce keeps its selections
+    // visible rather than showing an empty city/barangay list.
+    document.querySelectorAll('.select-province').forEach(function (p) {
+        if (p.value) p.dispatchEvent(new Event('change'));
+    });
+
+    /* ---- Current address mirrors permanent ---- */
+    const sameAs = document.getElementById('same-as-permanent');
+    const pairs = [
+        ['personal-padd-province', 'personal-cadd-province'],
+        ['personal-padd-city', 'personal-cadd-city'],
+        ['personal-padd-barangay', 'personal-cadd-barangay'],
+        ['personal-padd-specific', 'personal-cadd-specific'],
+    ];
+
+    function mirror() {
+        pairs.forEach(function ([from, to]) {
+            const source = document.getElementById(from);
+            const target = document.getElementById(to);
+
+            if (target.tagName === 'SELECT') {
+                target.querySelectorAll('option').forEach(function (option) {
+                    if (option.value === source.value) option.style.display = '';
+                });
+            }
+
+            target.value = source.value;
+            target.disabled = sameAs.checked;
+        });
+    }
+
+    sameAs.addEventListener('change', function () {
+        if (sameAs.checked) {
+            mirror();
+        } else {
+            pairs.forEach(([, to]) => { document.getElementById(to).disabled = false; });
+        }
+    });
+
+    // Keep the mirror live while the box stays ticked.
+    pairs.forEach(function ([from]) {
+        document.getElementById(from).addEventListener('change', function () {
+            if (sameAs.checked) mirror();
+        });
+    });
+
+    // Disabled fields are not submitted, so release them just before send.
+    document.getElementById('form-personal').addEventListener('submit', function () {
+        pairs.forEach(([, to]) => { document.getElementById(to).disabled = false; });
+    });
+
+    /* ---- Age from birth date ---- */
+    const birthdate = document.getElementById('personal-birthdate');
+    const age = document.getElementById('personal-age');
+
+    function computeAge() {
+        if (!birthdate.value) { age.value = ''; return; }
+        const born = new Date(birthdate.value);
+        const now = new Date();
+        let years = now.getFullYear() - born.getFullYear();
+        const m = now.getMonth() - born.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < born.getDate())) years--;
+        age.value = years >= 0 && years < 130 ? years : '';
+    }
+
+    birthdate.addEventListener('change', computeAge);
+    computeAge();
+
+    /* ---- Privacy notice, then password ----
+       The notice is shown before any account is created, so acknowledgement
+       happens at the point of collection rather than after the fact. */
+    const privacyModal = new bootstrap.Modal(document.getElementById('privacyModal'));
+    const passModal = new bootstrap.Modal(document.getElementById('setPassModal'));
+    const agree = document.getElementById('privacy-agree');
+    const btnContinue = document.getElementById('btn-privacy-continue');
+
+    document.getElementById('btn-show-privacy').addEventListener('click', function () {
+        privacyModal.show();
+    });
+
+    agree.addEventListener('change', function () {
+        btnContinue.disabled = !agree.checked;
+    });
+
+    btnContinue.addEventListener('click', function () {
+        if (!agree.checked) return;
+        document.getElementById('privacy-acknowledged').value = '1';
+        privacyModal.hide();
+        passModal.show();
+    });
+
+    /* ---- Set password and submit ---- */
+    const inputPass = document.getElementById('input-set-pass');
+    const passHint = document.getElementById('pass-hint');
+
+    document.getElementById('btn-set-pass').addEventListener('click', function () {
+        if (inputPass.value.length < 8) {
+            passHint.textContent = 'Please use at least 8 characters.';
+            passHint.style.color = 'var(--zn-warn)';
+            inputPass.focus();
+            return;
+        }
+
+        document.getElementById('app-code').value = inputPass.value;
+        document.getElementById('form-personal').submit();
+    });
+
+    inputPass.addEventListener('input', function () {
+        passHint.textContent = 'At least 8 characters.';
+        passHint.style.color = '';
+    });
+});
+</script>
+@endpush

@@ -1,27 +1,112 @@
 @extends('layouts.layout')
 
+@section('title', 'Documents')
+
 @section('content')
 
-<style>
-    #documents-panel {
-        font-size: 12px;
-        min-width: 50vw;
-        width: fit-content;
-    }
+<p class="zn-crumb">Send to HR</p>
+<p class="zn-page-title">Documents</p>
+<p class="zn-page-sub" style="max-width:62ch">
+    {{ $required->count() }} items are required for your application. We accept
+    {{ strtoupper(implode(', ', $extensions)) }} up to {{ round($maxSizeKb / 1024) }} MB.
+    A photo taken with your phone is fine, as long as the text is readable.
+</p>
 
-    #documents-panel .doc-hint {
-        font-size: 11px;
-    }
+<form id="form-document" method="POST" action="{{ route('documents.store') }}" enctype="multipart/form-data">
+    @csrf
 
-    #documents-empty {
-        border: 1px dashed var(--bs-border-color);
-        border-radius: .375rem;
-    }
-</style>
+    <div class="zn-drop" id="dropzone">
+        <div class="zn-drop-icon"><i class="bi bi-upload"></i></div>
+        <b>Choose a file, or drag one here</b>
+        <span>{{ strtoupper(implode(', ', $extensions)) }} · {{ round($maxSizeKb / 1024) }} MB maximum</span>
 
-<script type="text/javascript">
+        <div class="row g-2 justify-content-center mt-3">
+            <div class="col-sm-4">
+                <select class="form-select form-select-sm" name="doc_type" id="doc_type" required>
+                    @foreach ($types as $value => $label)
+                        <option value="{{ $value }}" @selected(old('doc_type') === $value)>
+                            {{ $label }}@if ($required->contains($value)) — required @endif
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-sm-4 d-none" id="doc-label-wrap">
+                <input type="text" class="form-control form-control-sm" name="doc_label" id="doc_label"
+                       maxlength="150" value="{{ old('doc_label') }}" placeholder="Name this document">
+            </div>
+            <div class="col-sm-4">
+                <input type="file" class="form-control form-control-sm" name="doc_file" id="doc_file"
+                       accept=".{{ implode(',.', $extensions) }}" required>
+            </div>
+        </div>
+
+        <button type="submit" class="zn-btn zn-btn-sm mt-3" id="btn-upload">Upload</button>
+    </div>
+</form>
+
+@php
+    $byType = $documents->groupBy('doc_type');
+    $extras = $documents->reject(fn ($d) => $required->contains($d->doc_type) || $optional->contains($d->doc_type));
+@endphp
+
+<p class="zn-group-label">Required</p>
+<div class="zn-doc-list">
+    @foreach ($required as $type)
+        @php $uploaded = $byType->get($type); @endphp
+
+        @if ($uploaded)
+            @foreach ($uploaded as $document)
+                @include('pages.partials.document-row', ['document' => $document])
+            @endforeach
+        @else
+            <div class="zn-doc required-missing">
+                <div class="zn-doc-ico"><i class="bi bi-exclamation-lg"></i></div>
+                <div>
+                    <div class="zn-doc-name">{{ config('documents.types.' . $type) }}</div>
+                    <div class="zn-doc-meta">Still needed to complete your application</div>
+                </div>
+                <button type="button" class="zn-btn zn-btn-sm js-pick" data-type="{{ $type }}">Upload</button>
+            </div>
+        @endif
+    @endforeach
+</div>
+
+<p class="zn-group-label">Optional</p>
+<div class="zn-doc-list">
+    @foreach ($optional as $type)
+        @php $uploaded = $byType->get($type); @endphp
+
+        @if ($uploaded)
+            @foreach ($uploaded as $document)
+                @include('pages.partials.document-row', ['document' => $document])
+            @endforeach
+        @else
+            <div class="zn-doc missing">
+                <div class="zn-doc-ico">—</div>
+                <div>
+                    <div class="zn-doc-name">{{ config('documents.types.' . $type) }}</div>
+                    <div class="zn-doc-meta">Not required, but it helps your application stand out</div>
+                </div>
+                <button type="button" class="zn-link js-pick" data-type="{{ $type }}">Upload</button>
+            </div>
+        @endif
+    @endforeach
+</div>
+
+@if ($extras->isNotEmpty())
+    <p class="zn-group-label">Also uploaded</p>
+    <div class="zn-doc-list">
+        @foreach ($extras as $document)
+            @include('pages.partials.document-row', ['document' => $document])
+        @endforeach
+    </div>
+@endif
+
+@endsection
+
+@push('scripts')
+<script>
     $(function () {
-        // "Other" is the only type the applicant names themselves.
         const otherType = @json($otherType);
 
         function toggleLabel() {
@@ -33,122 +118,33 @@
         $('#doc_type').on('change', toggleLabel);
         toggleLabel();
 
+        // "Upload" beside a missing document preselects that type and opens the
+        // file picker, so the applicant never has to find it in the dropdown.
+        $('.js-pick').on('click', function () {
+            $('#doc_type').val($(this).data('type')).trigger('change');
+            $('#doc_file').trigger('click');
+        });
+
         $('#form-document').on('submit', function () {
             $('#btn-upload').prop('disabled', true).text('Uploading…');
         });
 
-        $('.btn-remove-document').on('click', function (e) {
-            if (!confirm('Remove this document? This cannot be undone.')) {
-                e.preventDefault();
+        // Drag and drop onto the zone fills the same file input, so there is
+        // one upload path rather than two.
+        const zone = document.getElementById('dropzone');
+        ['dragenter', 'dragover'].forEach(evt => zone.addEventListener(evt, e => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--zn-accent)';
+        }));
+        ['dragleave', 'drop'].forEach(evt => zone.addEventListener(evt, e => {
+            e.preventDefault();
+            zone.style.borderColor = '';
+        }));
+        zone.addEventListener('drop', e => {
+            if (e.dataTransfer.files.length) {
+                document.getElementById('doc_file').files = e.dataTransfer.files;
             }
         });
     });
 </script>
-
-<div id="documents-panel">
-
-    @if (session('success'))
-        <div class="alert alert-success py-2">{{ session('success') }}</div>
-    @endif
-
-    @if ($errors->any())
-        <div class="alert alert-danger py-2">
-            <ul class="mb-0 ps-3">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <h6 class="text-uppercase text-body-light mb-1">My Documents</h6>
-    <p class="doc-hint text-body-secondary mb-3">
-        Upload clear copies of your documents.
-        Accepted formats: {{ strtoupper(implode(', ', $extensions)) }}.
-        Maximum size: {{ round($maxSizeKb / 1024) }} MB per file.
-        You may upload more than one file for the same document type.
-    </p>
-
-    @if ($documents->isEmpty())
-        <div id="documents-empty" class="text-center text-body-secondary p-4 mb-3">
-            You have not uploaded any documents yet.<br>
-            Use the form below to add your first one.
-        </div>
-    @else
-        <table class="table table-sm table-striped table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Document</th>
-                    <th>File</th>
-                    <th>Size</th>
-                    <th>Uploaded</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($documents as $document)
-                    <tr>
-                        <td class="text-nowrap">{{ $document->type_label }}</td>
-                        <td class="text-break">{{ $document->doc_original_name }}</td>
-                        <td class="text-nowrap">{{ $document->size_for_humans }}</td>
-                        <td class="text-nowrap">{{ $document->uploaded_at?->format('M d, Y') }}</td>
-                        <td>
-                            <div class="d-flex">
-                                <a class="btn btn-outline-secondary btn-sm m-1"
-                                   href="{{ route('documents.view', $document->id) }}"
-                                   target="_blank" rel="noopener">View</a>
-
-                                <form method="POST"
-                                      action="{{ route('documents.delete', $document->id) }}"
-                                      class="m-1">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="btn btn-outline-danger btn-sm btn-remove-document">Remove</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
-
-    <hr class="my-3">
-
-    <form id="form-document" method="POST" action="{{ route('documents.store') }}"
-          enctype="multipart/form-data" class="mb-3">
-        @csrf
-
-        <div class="row g-3 align-items-end">
-            <div class="col-lg-auto">
-                <label for="doc_type" class="form-label mb-1">Document Type</label>
-                <select class="form-select form-select-sm" name="doc_type" id="doc_type" required>
-                    @foreach ($types as $value => $label)
-                        <option value="{{ $value }}" @selected(old('doc_type') === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="col-lg-auto d-none" id="doc-label-wrap">
-                <label for="doc_label" class="form-label mb-1">Document Name</label>
-                <input type="text" class="form-control form-control-sm" name="doc_label"
-                       id="doc_label" maxlength="150" value="{{ old('doc_label') }}"
-                       placeholder="e.g. Barangay Clearance">
-            </div>
-
-            <div class="col-lg-auto">
-                <label for="doc_file" class="form-label mb-1">File</label>
-                <input type="file" class="form-control form-control-sm" name="doc_file" id="doc_file"
-                       accept=".{{ implode(',.', $extensions) }}" required>
-            </div>
-
-            <div class="col-lg-auto">
-                <button type="submit" class="btn btn-primary btn-sm" id="btn-upload">Upload</button>
-            </div>
-        </div>
-    </form>
-
-</div>
-
-@stop
+@endpush

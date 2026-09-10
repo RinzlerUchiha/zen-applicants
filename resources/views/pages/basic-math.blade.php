@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -101,7 +101,7 @@
 </script>
 @endif
 <div class="w-100 h-100 position-relative">
-    <button class="btn btn-secondary position-absolute top-0 start-50 translate-middle-x" style="{{ $answer ? 'display: none;' : '' }}" id="btn-start">Start Timer</button>
+    <button class="zn-btn zn-btn-out position-absolute top-0 start-50 translate-middle-x" style="{{ $answer ? 'display: none;' : '' }}" id="btn-start">Start Timer</button>
     <div class="border border-3 border-danger text-danger rounded p-1 position-sticky bg-white" id="timer" style="display: none;">00:12:00</div>
 
     <form id="form-basic-math" class="ms-md-5 mb-5" style="{{ !$answer ? 'display: none;' : '' }}" oncontextmenu="return false;">
@@ -110,13 +110,13 @@
             @foreach ($answerList as $i => $item)
                 <div class="row">
                     <div class="col">
-                        <input type="text" readonly class="form-control-plaintext" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $item['question'] }}">
+                        <input type="text" readonly tabindex="-1" class="zn-question" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $item['question'] }}">
                     </div>
                 </div>
                 @foreach ($item['answer'] as $o => $opt)
                     <div class="row">
                         <div class="col ps-5">
-                            <div class="form-check">
+                            <div class="form-check zn-option">
                                 <input class="form-check-input basic-math-ans-{{ $i }}" type="radio" data-cat="{{ $o }}" value="{{ $o }}" id="opt-{{ $i.'-'.$o }}" name="opt-{{ $i }}" {{ ($answer?->math_ans[$i] ?? '') == $o ? 'checked' : '' }} required>
                                 <label class="form-check-label" for="opt-{{ $i.'-'.$o }}">{{ $opt }}</label>
                             </div>
@@ -128,7 +128,7 @@
         @if (!$answer)
             <br>
             <div class="d-flex justify-content-center gap-5">
-                <button class="btn btn-primary" type="submit">Submit</button>
+                <button class="zn-btn" type="submit">Submit</button>
             </div>
         @endif
     </form>

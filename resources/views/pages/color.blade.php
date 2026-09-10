@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -59,14 +59,14 @@
 <form id="form-color" class="ms-md-5 mb-5" oncontextmenu="return false;">
     <fieldset {{ $answer ? 'disabled' : '' }}>
         <div class="text-muted small mb-3">Instructions: Choose the characteristic that best describes you: choose one answer per number.</div>
-        <table class="table border border-5 rounded-5">
+        <table class="zn-table">
             @foreach ($answerList as $i => $item)
                 <tr>
                     <td class="align-middle fs-5">{{ $i }}</td>
                     @foreach ($item as $o => $opt)
                         <td style="height: 10px;">
                             <input type="radio" class="btn-check color-ans" name="opt-{{ $i }}" id="opt-{{ $i.'-'.$o }}" data-cat="{{ $o }}" value="{{ $opt }}" data-item="{{ $i }}" autocomplete="off" {{ ($answer?->wcay_ans[$i] ?? '') == $o ? 'checked' : '' }} required>
-                            <label class="btn d-flex justify-content-center align-items-center btn-outline-secondary h-100 w-100" for="opt-{{ $i.'-'.$o }}">{{ $opt }}</label>
+                            <label class="zn-btn zn-btn-out d-flex justify-content-center align-items-center h-100 w-100" for="opt-{{ $i.'-'.$o }}">{{ $opt }}</label>
                         </td>
                     @endforeach
                 </tr>
@@ -76,7 +76,7 @@
     @if (!$answer)
         <br>
         <div class="d-flex justify-content-center gap-5">
-            <button class="btn btn-primary" type="submit">Submit</button>
+            <button class="zn-btn" type="submit">Submit</button>
         </div>
     @endif
 </form>

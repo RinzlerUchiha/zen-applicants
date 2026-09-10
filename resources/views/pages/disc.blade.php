@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
@@ -177,7 +177,7 @@
     <div id="form-disc" class="mx-md-5 mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">Instrucions: Rank each category of words on a scale of 4,3,2,1 with 4 being the word that best describes you and 1 being the least like you. Use all rankings in each category only once.</div>
-            <table class="table" id="tbl-disc">
+            <table class="zn-table" id="tbl-disc">
                 <tbody>
                     @foreach ($answerList as $s => $set)
                         <tr>
@@ -199,7 +199,7 @@
         @if (!$answer)
             <br>
             <div class="d-flex justify-content-center gap-5">
-                <button class="btn btn-primary" id="btn-submit">Submit</button>
+                <button class="zn-btn" id="btn-submit">Submit</button>
             </div>
         @endif
     </div>

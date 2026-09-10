@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -72,7 +72,7 @@
         <div class="row g-3">
             @foreach ($answerList as $s => $set)
                 <div class="col-md-6">
-                    <div class="card p-3 h-100">
+                    <div class="zn-card p-3 h-100">
                         <div class="d-flex justify-content-around">
                             <h5>{{ !empty($set[1]) ? strtoupper(array_keys($set[1])[0]) : '' }}</h5>
                             <h5>or</h5>
@@ -96,7 +96,7 @@
     @if (!$answer)
         <br>
         <div class="d-flex justify-content-center gap-5">
-            <button class="btn btn-primary" type="submit">Submit</button>
+            <button class="zn-btn" type="submit">Submit</button>
         </div>
     @endif
     <br>

@@ -1,171 +1,176 @@
-@extends('layouts.layout')
+@extends('layouts.form-section')
 
-@section('content')
+@section('title', 'Special skills')
 
-<style>
-    #skills-list {
-        min-width: 50vw;
-        width: fit-content;
-    }
-    #skills-list * {
-        font-size: 12px;
-    }
+@section('section')
 
-    #skills-list td:first-child,
-    #skills-list td:nth-child(2) {
-        width: 40%;
-    }
+<p class="zn-help" style="margin-top:0">Anything you are good at that could help in the role. Pick from the list, or describe your own.</p>
 
-    #form-skill {
-        min-width: 50vw;
-        width: fit-content;
-    }
-</style>
-<script type="text/javascript">
-    $(function(){
-        $('#skill-category').change(function(){
-            $('#skill-type option').not('[value=""]').hide();
-            $('#skill-type option[category="'+ this.value +'"]').show();
-
-            if(this.value == '7'){
-                $('#skill-other').removeClass('d-none');
-                $('#skill-type').addClass('d-none');
-            }else{
-                $('#skill-other').addClass('d-none');
-                $('#skill-type').removeClass('d-none');
-            }
-        });
-
-        $('#btn-cancel-edit-skill').click(function(){
-            $('#form-skill input, #form-skill select').val('');
-            $('#form-skill').toggleClass('d-none');
-            $('#skills-list').toggleClass('d-none');
-        });
-    })
-
-    function edit_skill(e) {
-        $('#skill-id').val($(e).data('skillid'));
-        $('#skill-category').val($(e).data('category'));
-        $('#skill-type').val($(e).data('type'));
-        $('#skill-other').val($(e).data('other'));
-
-        $('#skill-type option').not('[value=""]').hide();
-        $('#skill-type option[category="'+ $('#skill-category').val() +'"]').show();
-
-        if($('#skill-category').val() == '7'){
-            $('#skill-other').removeClass('d-none');
-            $('#skill-type').addClass('d-none');
-        }else{
-            $('#skill-other').addClass('d-none');
-            $('#skill-type').removeClass('d-none');
-        }
-
-        $('#form-skill').toggleClass('d-none');
-        $('#skills-list').toggleClass('d-none');
-    }
-
-    async function remove_skill(e) {
-        if (confirm('Are you sure you want to delete this post?')) {
-            try {
-                const url = @json(route('skill.delete', ['id' => ':id'])).replace(':id', $(e).data('skillid'));
-                const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    },
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    $(e).closest('tr').remove();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to remove record.');
-            }
-        }
-    }
-</script>
-<div id="skills-list">
-    @if(session('success'))
-        <div style="color: green;">
-            {{ session('success') }}
+{{-- Saved entries. Cards rather than a table: the same layout reads on a
+     phone without horizontal scrolling, and each entry can carry its own
+     actions. --}}
+<div id="skill-list">
+    @forelse ($skill as $list)
+        <div class="zn-entry">
+            <div class="zn-entry-head">
+                <div>
+                    <p class="zn-entry-title">{{ $list->sc_title ?: 'Skill' }}</p>
+                    <p class="zn-entry-sub">{{ $list->skill_name ?: $list->skill_others ?: '—' }}</p>
+                </div>
+                <div class="zn-entry-actions">
+                    <button type="button" class="zn-link" style="font-size:12px"
+                            data-skillid="{{ $list->skill_id }}"
+                            data-category="{{ $list->skill_category }}"
+                            data-type="{{ $list->skill_type }}"
+                            data-other="{{ $list->skill_others }}"
+                            onclick="edit_skill(this)">Edit</button>
+                    <button type="button" class="zn-link" style="font-size:12px;color:var(--zn-warn)"
+                            data-skillid="{{ $list->skill_id }}"
+                            onclick="remove_skill(this)">Remove</button>
+                </div>
+            </div>
         </div>
-    @endif
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+    @empty
+        <div class="zn-empty">
+            <b>No skills added yet.</b>
+            Use the button below to add your first one.
         </div>
-    @endif
-    <table class="table table-sm table-striped table-hover">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Skills</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($skill as $list)
-            <tr>
-                <td>{{ $list->sc_title }}</td>
-                <td>{{ $list->skill_category == 7 ? $list->skill_others : $list->skill_name }}</td>
-                <td class="text-center">
-                    <div class="d-flex">
-                        <button type="button" class="btn btn-outline-secondary btn-sm m-1"
-                        data-skillid="{{ $list->skill_id }}"
-                        data-category="{{ $list->skill_category }}"
-                        data-type="{{ $list->skill_type }}"
-                        data-other="{{ $list->skill_others }}"
-                        onclick="edit_skill(this)">Edit</button>
-                        <button type="button" class="btn btn-outline-danger btn-sm m-1" data-skillid="{{ $list->skill_id }}" onclick="remove_skill(this)">Remove</button>
-                    </div>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-    <button class="btn btn-outline-secondary btn-sm" onclick="edit_skill(this)">Add</button>
+    @endforelse
+
+    <div class="zn-addbar" style="margin-top:14px">
+        <div>
+            <h3>Add another skill</h3>
+            <p>You can add as many as you need.</p>
+        </div>
+        <button type="button" class="zn-btn zn-btn-out zn-btn-sm" onclick="add_skill()">
+            <i class="bi bi-plus-lg"></i> Add skill
+        </button>
+    </div>
 </div>
 
-<form id="form-skill" name="form-skill" method="post" action="{{ route('skill.store') }}" class="mb-3 d-none">
-    @csrf
-    <input type="hidden" name="skill-id" id="skill-id" value="">
-    <div class="row g-3">
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <select class="form-control-plaintext border-bottom" name="skill-category" id="skill-category" aria-label="">
-                    <option value="" selected>-Select-</option>
-                    @foreach($skillsCategoryList as $sc)
+{{-- Add / edit form. Hidden until the applicant chooses to add or edit, so
+     the page opens on what they have already saved. --}}
+<div id="form-skill-wrap" class="zn-card d-none">
+    <div class="zn-section"><h5 id="form-skill-heading">Add skill</h5></div>
+
+    <form id="form-skill" method="POST" action="{{ route('skill.store') }}">
+        @csrf
+        <input type="hidden" name="skill-id" id="skill-id">
+
+        <div class="zn-grid">
+            <div class="zn-fld zn-col-4">
+                <label for="skill-category">Category <span class="zn-req">*</span></label>
+                <select name="skill-category" id="skill-category">
+                    <option value="">Select a category</option>
+                    @foreach ($skillsCategoryList as $sc)
                         <option value="{{ $sc->sc_id }}">{{ $sc->sc_title }}</option>
                     @endforeach
                 </select>
-                <label for="skill-category">Category</label>
             </div>
-        </div>
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <select class="form-control-plaintext border-bottom" name="skill-type" id="skill-type" aria-label="">
-                    <option value="" selected>-Select-</option>
-                    @foreach($skillsList as $sl)
-                        <option style="display: none;" category="{{ $sl->skil_categID }}" value="{{ $sl->id }}">{{ $sl->skill_name }}</option>
+            <div class="zn-fld zn-col-4">
+                <label for="skill-type">Type <span class="zn-opt">optional</span></label>
+                <select name="skill-type" id="skill-type">
+                    <option value="">Select a skill</option>
+                    @foreach ($skillsList as $sl)
+                        <option value="{{ $sl->id }}" data-category="{{ $sl->skil_categID }}">{{ $sl->skill_name }}</option>
                     @endforeach
                 </select>
-                <input type="text" name="skill-other" id="skill-other" class="form-control-plaintext border-bottom d-none">
-                <label for="skill-type">Type</label>
+            </div>
+            <div class="zn-fld zn-col-4">
+                <label for="skill-other">Or describe your own <span class="zn-opt">optional</span></label>
+                <input type="text" name="skill-other" id="skill-other" placeholder="If it is not on the list">
             </div>
         </div>
-    </div>
-    <button type="submit" class="btn btn-primary btn-sm">Save</button>
-    <button type="button" class="btn btn-danger btn-sm" id="btn-cancel-edit-skill">Cancel</button>
-</form>
 
-@stop
+        <div class="zn-formnav">
+            <span class="zn-formnav-hint"><span class="zn-req">*</span> Required</span>
+            <div class="d-flex gap-2">
+                <button type="button" class="zn-btn zn-btn-out zn-btn-sm" id="btn-cancel-edit-skill">Cancel</button>
+                <button type="submit" class="zn-btn zn-btn-sm">Save skill</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+    function show_skill_form(heading) {
+        document.getElementById('form-skill-heading').textContent = heading;
+        document.getElementById('form-skill-wrap').classList.remove('d-none');
+        document.getElementById('skill-list').classList.add('d-none');
+        document.getElementById('form-skill-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function add_skill() {
+        document.querySelectorAll('#form-skill input, #form-skill select').forEach(function (el) {
+            if (el.type !== 'hidden' || el.id === 'skill-id') el.value = '';
+        });
+        show_skill_form('Add skill');
+    }
+
+    function edit_skill(e) {
+        document.getElementById('skill-id') && (document.getElementById('skill-id').value = e.dataset.skillid || '');
+        document.getElementById('category') && (document.getElementById('category').value = e.dataset.category || '');
+        document.getElementById('type') && (document.getElementById('type').value = e.dataset.type || '');
+        document.getElementById('other') && (document.getElementById('other').value = e.dataset.other || '');
+        if (window.__filterSkillTypes) window.__filterSkillTypes();
+        show_skill_form('Edit skill');
+    }
+
+    async function remove_skill(e) {
+        if (!confirm('Remove this skill? This cannot be undone.')) return;
+
+        try {
+            const url = @json(route('skill.delete', ['id' => ':id'])).replace(':id', e.dataset.skillid);
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Could not remove that entry: ' + (data.error || 'unknown error'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Could not remove that entry. Please try again.');
+        }
+    }
+
+    // Only show skill types belonging to the chosen category — the full list
+    // is long, and a type from another category would not make sense.
+    (function () {
+        const category = document.getElementById('skill-category');
+        const type = document.getElementById('skill-type');
+
+        function filterTypes() {
+            const chosen = category.value;
+            let visibleSelected = false;
+
+            type.querySelectorAll('option[data-category]').forEach(function (option) {
+                const match = !chosen || option.dataset.category === chosen;
+                option.hidden = !match;
+                if (match && option.value === type.value) visibleSelected = true;
+            });
+
+            if (!visibleSelected) type.value = '';
+        }
+
+        category.addEventListener('change', filterTypes);
+        filterTypes();
+        window.__filterSkillTypes = filterTypes;
+    })();
+
+    document.getElementById('btn-cancel-edit-skill').addEventListener('click', function () {
+        document.getElementById('form-skill-wrap').classList.add('d-none');
+        document.getElementById('skill-list').classList.remove('d-none');
+    });
+</script>
+@endpush

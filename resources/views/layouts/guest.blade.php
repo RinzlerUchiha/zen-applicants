@@ -1,45 +1,30 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+{{--
+    Public-width shell: careers listing and job detail.
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex, nofollow">
-    <title>@yield('title', config('app.name'))</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="url-prefix" content="{{ url('/') }}">
-    <link rel="icon" href="https://teamtngc.com/zen/assets/img/coffi.png" type="image/png">
+    Kept as its own layout rather than retired, because careers/index and
+    careers/show already extend it — this way they pick up the redesign with
+    no edit. It is now a thin wrapper over layouts.app, so signed-out and
+    signed-in pages share one header and one visual language.
+--}}
+@extends('layouts.app')
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+@section('body')
+    <main class="zn-canvas">
+        <div class="zn-narrow">
+            @if (session('success'))
+                <div class="zn-toast"><i class="bi bi-check-circle-fill"></i> {{ session('success') }}</div>
+            @endif
+            @if (session('error'))
+                <div class="zn-toast error"><i class="bi bi-exclamation-circle-fill"></i> {{ session('error') }}</div>
+            @endif
+            @if ($errors->any())
+                <div class="zn-toast error">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                </div>
+            @endif
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
-        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous">
-    </script>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <style>
-        body, html { min-height: 100%; margin: 0; background-color: #f4f4f4 !important; }
-        #site-logo { height: 30px; }
-    </style>
-</head>
-
-<body>
-    @include('layouts.partials.header')
-
-    <main class="container-fluid">
-        @yield('content')
+            @yield('content')
+        </div>
     </main>
-</body>
-
-</html>
+@endsection

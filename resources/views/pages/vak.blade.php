@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -74,13 +74,13 @@
         @foreach ($answerList as $i => $item)
             <div class="row">
                 <div class="col">
-                    <input type="text" readonly class="form-control-plaintext" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $item['question'] }}">
+                    <input type="text" readonly tabindex="-1" class="zn-question" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $item['question'] }}">
                 </div>
             </div>
             @foreach ($item['answer'] as $o => $opt)
                 <div class="row">
                     <div class="col ps-5">
-                        <div class="form-check">
+                        <div class="form-check zn-option">
                             <input class="form-check-input vak-ans-{{ $i }}" type="radio" data-cat="{{ $o }}" value="{{ $opt }}" id="opt-{{ $i.'-'.$o }}" name="opt-{{ $i }}" {{ ($answer?->vak_ans[$i] ?? '') == $o ? 'checked' : '' }} required>
                             <label class="form-check-label" for="opt-{{ $i.'-'.$o }}">{{ $opt }}</label>
                         </div>
@@ -92,7 +92,7 @@
     @if (!$answer)
         <br>
         <div class="d-flex justify-content-center gap-5">
-            <button class="btn btn-primary" type="submit">Submit</button>
+            <button class="zn-btn" type="submit">Submit</button>
         </div>
     @endif
 </form>

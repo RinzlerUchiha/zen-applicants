@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -68,7 +68,7 @@
     <fieldset {{ $answer ? 'disabled' : '' }}>
         <div class="text-muted small mb-3">Research Shows that all human beings have at least eight different types of intelligences. Depending on your background and age, some intelligences are more developed than the others. This activity will help you find out what your strengths are. Knowing this, you can strengthen the other intelligences that you do not use as often.</div>
         @foreach ($answerList as $i => $item)
-            <div class="form-check">
+            <div class="form-check zn-option">
                 <input class="form-check-input miq-ans" type="checkbox" data-cat="{{ $item['cat'] }}" value="{{ $item['ans'] }}" data-item="{{ $i }}" id="item-{{ $i }}" {{ in_array($i, ($answer?->miq_ans ?? [])) ? 'checked' : '' }}>
                 <label class="form-check-label" for="item-{{ $i }}">{{ $item['ans'] }}</label>
             </div>
@@ -77,7 +77,7 @@
     @if (!$answer)
         <br>
         <div class="d-flex justify-content-center gap-5">
-            <button class="btn btn-primary" type="submit">Submit</button>
+            <button class="zn-btn" type="submit">Submit</button>
         </div>
     @endif
 </form>

@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
@@ -105,7 +105,7 @@
     <form id="form-career-anchors" class="mx-md-5 mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">Use the following scale to rate how each of the items is for you. Check the THREE highest items that seem most true for you</div>
-            <table class="table text-center">
+            <table class="zn-table text-center">
                 <tr>
                     <th>Never True for Me</th>
                     <th colspan="2">Occasionally True for Me</th>
@@ -122,7 +122,7 @@
                     <th>6</th>
                 </tr>
             </table>
-            <table class="table" id="tbl-career-anchors">
+            <table class="zn-table" id="tbl-career-anchors">
                 <tbody>
                     @foreach ($answerList as $i => $item)
                         <tr data-item="{{ $i }}">
@@ -152,7 +152,7 @@
         @if (!$answer)
             <br>
             <div class="d-flex justify-content-center gap-5">
-                <button type="submit" class="btn btn-primary" id="btn-submit">Submit</button>
+                <button type="submit" class="zn-btn" id="btn-submit">Submit</button>
             </div>
         @endif
     </form>

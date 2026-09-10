@@ -1,0 +1,1040 @@
+/* ==========================================================================
+   Zen Applicants — design system
+   --------------------------------------------------------------------------
+   Single source of truth for the applicant-facing UI. Before this file the
+   theme lived in per-page <style> blocks across 19 views, which is why a
+   colour could not be changed in one place and dark mode was impossible.
+
+   Palette is sampled from ZenHub's coffi.png logo:
+     cup      #401800 – #502008
+     steam    #A07058
+     wordmark #5D2502
+
+   The accent is #7B4A34 — the logo's mauve-brown at 7.31:1 on white.
+   The literal steam tone measures 4.24:1 and fails WCAG AA for body text,
+   so it is used only as the dark-theme accent, where it has the contrast.
+
+   Link affordance is carried by UNDERLINE, not hue (WCAG 1.4.1: colour must
+   never be the only signal). That is why no blue is needed anywhere.
+
+   Section index
+     1. Tokens
+     2. Bootstrap bridge
+     3. Base
+     4. App shell
+     5. Rail
+     6. Actions and links
+     7. Surfaces, pills, status marks
+     8. Progress and stage tracker
+     9. Task rows
+    10. Form idiom
+    11. Documents
+    12. Careers
+    13. Auth
+    14. Feedback
+    15. Responsive
+   ========================================================================== */
+
+/* ---------- 1. Tokens ---------------------------------------------------- */
+
+:root {
+  --zn-bg:         #ece9e6;
+  --zn-surface:    #ffffff;
+  --zn-surface-2:  #f5f2ef;
+  --zn-ink:        #201a16;
+  --zn-ink-2:      #4e443e;
+  --zn-ink-3:      #8a7e76;
+  --zn-line:       #e5e0db;
+  --zn-line-2:     #cfc7c0;
+  --zn-divider:    #f0edea;
+
+  --zn-accent:      #7b4a34;
+  --zn-accent-dark: #5d2502;
+  --zn-accent-soft: #f8f3ef;
+  --zn-on-accent:   #ffffff;
+
+  --zn-ok:      #1e7b45;
+  --zn-ok-soft: #e8f3ec;
+  --zn-warn:      #c62828;
+  --zn-warn-soft: #fdf0f0;
+  --zn-lock:      #8a7e76;
+  --zn-lock-soft: #f0edea;
+
+  --zn-brand: #5d2502;
+
+  --zn-shadow:     0 1px 2px rgba(32, 26, 22, .05);
+  --zn-shadow-pop: 0 8px 24px rgba(32, 26, 22, .10);
+
+  --zn-radius:    6px;
+  --zn-radius-lg: 8px;
+
+  --zn-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Dark theme is defined but not yet switchable in the UI — set
+   data-bs-theme="dark" on <html> to preview it. The accent flips to the
+   logo's steam tone, which finally has the contrast it needs on a dark
+   ground. */
+[data-bs-theme="dark"] {
+  --zn-bg:         #14100e;
+  --zn-surface:    #1d1815;
+  --zn-surface-2:  #251f1b;
+  --zn-ink:        #efe7e1;
+  --zn-ink-2:      #b5a79e;
+  --zn-ink-3:      #877a72;
+  --zn-line:       #332b26;
+  --zn-line-2:     #453a33;
+  --zn-divider:    #2a231f;
+
+  --zn-accent:      #c9a08a;
+  --zn-accent-dark: #e0bca6;
+  --zn-accent-soft: #2a211c;
+  --zn-on-accent:   #14100e;
+
+  --zn-ok:      #6fbf8f;
+  --zn-ok-soft: #1b2a21;
+  --zn-warn:      #e4796f;
+  --zn-warn-soft: #2e1b19;
+  --zn-lock:      #877a72;
+  --zn-lock-soft: #251f1b;
+
+  --zn-brand: #c9a08a;
+
+  --zn-shadow:     0 2px 8px rgba(0, 0, 0, .4);
+  --zn-shadow-pop: 0 12px 28px rgba(0, 0, 0, .6);
+}
+
+/* ---------- 2. Bootstrap bridge ------------------------------------------
+   Bootstrap 5.3 is loaded on every page and the 19 existing views are built
+   from its classes. Rebinding its variables here means those pages inherit
+   the palette without any markup change — the reason this redesign does not
+   require rewriting every form. */
+
+:root {
+  --bs-primary:      #7b4a34;
+  --bs-primary-rgb:  123, 74, 52;
+  --bs-body-bg:      var(--zn-bg);
+  --bs-body-color:   var(--zn-ink);
+  --bs-border-color: var(--zn-line);
+  --bs-link-color:       var(--zn-accent);
+  --bs-link-hover-color: var(--zn-accent-dark);
+  --bs-secondary-color:  var(--zn-ink-2);
+  --bs-tertiary-color:   var(--zn-ink-3);
+  --bs-emphasis-color:   var(--zn-ink);
+  --bs-font-sans-serif:  var(--zn-font);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--zn-accent);
+  --bs-btn-border-color: var(--zn-accent);
+  --bs-btn-hover-bg: var(--zn-accent-dark);
+  --bs-btn-hover-border-color: var(--zn-accent-dark);
+  --bs-btn-active-bg: var(--zn-accent-dark);
+  --bs-btn-active-border-color: var(--zn-accent-dark);
+  --bs-btn-color: var(--zn-on-accent);
+  --bs-btn-hover-color: var(--zn-on-accent);
+  --bs-btn-disabled-bg: var(--zn-accent);
+  --bs-btn-disabled-border-color: var(--zn-accent);
+}
+
+.btn-outline-primary,
+.btn-outline-secondary {
+  --bs-btn-color: var(--zn-accent);
+  --bs-btn-border-color: var(--zn-line-2);
+  --bs-btn-hover-bg: var(--zn-accent-soft);
+  --bs-btn-hover-border-color: var(--zn-accent);
+  --bs-btn-hover-color: var(--zn-accent);
+  --bs-btn-active-bg: var(--zn-accent-soft);
+  --bs-btn-active-border-color: var(--zn-accent);
+  --bs-btn-active-color: var(--zn-accent);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--zn-accent);
+  box-shadow: 0 0 0 .18rem rgba(123, 74, 52, .18);
+}
+
+.table { --bs-table-color: var(--zn-ink-2); --bs-table-border-color: var(--zn-line); }
+.table > thead { --bs-table-color: var(--zn-ink-3); }
+
+/* ---------- 3. Base ------------------------------------------------------ */
+
+html, body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--zn-bg);
+  color: var(--zn-ink);
+  font-family: var(--zn-font);
+}
+
+body { font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+
+:focus-visible { outline: 2px solid var(--zn-accent); outline-offset: 2px; }
+
+.zn-page-title { font-size: 21px; font-weight: 700; letter-spacing: -.3px; margin: 0 0 3px; }
+.zn-page-sub   { color: var(--zn-ink-3); font-size: 13px; margin: 0 0 20px; }
+.zn-narrow     { max-width: 900px; margin: 0 auto; }
+.zn-narrower   { max-width: 620px; margin: 0 auto; }
+.zn-muted      { color: var(--zn-ink-3); }
+.zn-count      { font-size: 11px; color: var(--zn-ink-3); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- 4. App shell ------------------------------------------------- */
+
+.zn-topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 10px 22px;
+  background: var(--zn-surface);
+  border-bottom: 1px solid var(--zn-line);
+  position: sticky; top: 0; z-index: 1030;
+}
+
+.zn-brand {
+  display: flex; align-items: center; gap: 9px;
+  font-weight: 700; font-size: 16px; letter-spacing: -.2px;
+  color: var(--zn-brand); text-decoration: none;
+}
+.zn-brand:hover { color: var(--zn-brand); }
+/* flex: none is load-bearing — as a flex item the logo would otherwise
+   shrink horizontally while height pins it vertically, which distorts it.
+   object-fit guards the same failure if a future logo is not square. */
+.zn-brand img { height: 26px; width: auto; flex: none; object-fit: contain; }
+.zn-brand em { font-style: normal; color: var(--zn-ink-3); font-weight: 500; }
+
+.zn-topnav { display: flex; gap: 2px; align-items: center; list-style: none; margin: 0; padding: 0; }
+.zn-topnav a {
+  font-size: 13px; font-weight: 600; color: var(--zn-ink-2); text-decoration: none;
+  padding: 6px 13px; border-radius: var(--zn-radius); display: inline-block;
+}
+.zn-topnav a:hover { background: var(--zn-surface-2); color: var(--zn-ink); }
+.zn-topnav a.active { color: var(--zn-accent); background: var(--zn-accent-soft); }
+
+.zn-user { display: flex; align-items: center; gap: 10px; }
+.zn-user-meta { text-align: right; line-height: 1.25; }
+.zn-user-name { font-size: 13px; font-weight: 700; color: var(--zn-ink); }
+.zn-user-role { font-size: 11px; color: var(--zn-ink-3); }
+
+.zn-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--zn-accent-soft); color: var(--zn-accent);
+  display: grid; place-items: center; font-weight: 700; font-size: 12px;
+  border: 1px solid var(--zn-line); object-fit: cover; flex: none;
+}
+
+.zn-canvas { padding: 22px; }
+
+/* ---------- 5. Rail ------------------------------------------------------ */
+
+.zn-shell { display: grid; grid-template-columns: 238px 1fr; align-items: start; min-height: calc(100vh - 53px); }
+
+.zn-rail {
+  background: var(--zn-surface); border-right: 1px solid var(--zn-line);
+  padding: 15px 11px; position: sticky; top: 53px;
+  max-height: calc(100vh - 53px); overflow-y: auto;
+}
+.zn-rail::-webkit-scrollbar { width: 7px; }
+.zn-rail::-webkit-scrollbar-thumb { background: var(--zn-line-2); border-radius: 10px; }
+
+.zn-rail-progress { background: var(--zn-surface-2); border-radius: var(--zn-radius); padding: 11px 12px; margin-bottom: 15px; }
+.zn-rail-progress .t { font-size: 11.5px; color: var(--zn-ink-3); display: flex; justify-content: space-between; font-weight: 600; }
+.zn-rail-progress .t b { color: var(--zn-ink); font-size: 13px; }
+
+.zn-rail-group { margin-bottom: 15px; }
+.zn-rail-group > h4 {
+  font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--zn-ink-3); margin: 0 0 5px; padding: 0 8px;
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+}
+
+.zn-rail-item {
+  display: grid; grid-template-columns: 16px 1fr auto; gap: 10px; align-items: center;
+  padding: 7px 8px; border-radius: var(--zn-radius);
+  font-size: 12.5px; color: var(--zn-ink-2); text-decoration: none;
+}
+.zn-rail-item:hover { background: var(--zn-surface-2); color: var(--zn-ink); }
+.zn-rail-item.active { background: var(--zn-accent-soft); color: var(--zn-accent); font-weight: 700; }
+.zn-rail-item.locked { color: var(--zn-ink-3); cursor: default; pointer-events: none; }
+
+.zn-locknote {
+  background: var(--zn-lock-soft); border: 1px dashed var(--zn-line-2);
+  border-radius: var(--zn-radius); padding: 9px 10px;
+  font-size: 11px; color: var(--zn-ink-2); margin: 6px 8px 0;
+}
+
+.zn-work { padding: 20px 22px; min-width: 0; }
+.zn-crumb { font-size: 11.5px; color: var(--zn-ink-3); margin-bottom: 3px; font-weight: 600; }
+
+/* ---------- 6. Actions and links ----------------------------------------- */
+
+/* Underline is the affordance; the accent only reinforces it. */
+.zn-link {
+  color: var(--zn-accent); font-weight: 600;
+  text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px;
+  cursor: pointer; background: none; border: none; padding: 0; font-size: inherit;
+}
+.zn-link:hover { color: var(--zn-accent-dark); text-decoration-thickness: 2px; }
+
+.zn-btn {
+  font-size: 13.5px; font-weight: 600; font-family: inherit;
+  background: var(--zn-accent); color: var(--zn-on-accent);
+  border: 1px solid var(--zn-accent); border-radius: var(--zn-radius);
+  padding: 9px 18px; cursor: pointer; white-space: nowrap;
+  text-decoration: none; display: inline-block; text-align: center;
+}
+.zn-btn:hover { background: var(--zn-accent-dark); border-color: var(--zn-accent-dark); color: var(--zn-on-accent); }
+.zn-btn:disabled, .zn-btn.disabled { opacity: .55; cursor: not-allowed; }
+
+.zn-btn-out { background: transparent; color: var(--zn-accent); border-color: var(--zn-line-2); }
+.zn-btn-out:hover { background: var(--zn-accent-soft); border-color: var(--zn-accent); color: var(--zn-accent); }
+
+.zn-btn-sm { font-size: 12.5px; padding: 7px 14px; }
+.zn-btn-block { display: block; width: 100%; }
+
+/* ---------- 7. Surfaces, pills, status marks ----------------------------- */
+
+.zn-card {
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 18px 20px; box-shadow: var(--zn-shadow);
+}
+.zn-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.zn-card-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--zn-ink-3); margin: 0; }
+
+/* Outlined chips, matching ZenHub's leave badges. */
+.zn-pill {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 4px; line-height: 1.5;
+  background: var(--zn-surface); border: 1px solid currentColor; display: inline-block;
+}
+.zn-pill-req   { color: var(--zn-warn); }
+.zn-pill-opt   { color: var(--zn-ink-3); }
+.zn-pill-later { color: var(--zn-lock); }
+.zn-pill-ok    { color: var(--zn-ok); }
+.zn-pill-acc   { color: var(--zn-accent); }
+
+.zn-mark {
+  width: 16px; height: 16px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; font-size: 9px; font-weight: 700;
+}
+.zn-mark-done { background: var(--zn-ok); color: #fff; }
+.zn-mark-part { border: 2px solid var(--zn-accent); background: var(--zn-accent-soft); }
+.zn-mark-todo { border: 2px solid var(--zn-line-2); background: transparent; }
+.zn-mark-lock { background: var(--zn-lock-soft); color: var(--zn-lock); font-size: 8px; }
+
+/* ---------- 8. Progress and stage tracker -------------------------------- */
+
+.zn-bar { height: 5px; border-radius: 3px; background: var(--zn-line); overflow: hidden; }
+.zn-bar > i { display: block; height: 100%; background: var(--zn-accent); border-radius: 3px; }
+.zn-minibar { height: 4px; border-radius: 2px; background: var(--zn-line); overflow: hidden; margin-top: 6px; }
+.zn-minibar > i { display: block; height: 100%; background: var(--zn-accent); border-radius: 2px; }
+
+.zn-track { display: flex; margin: 16px 0 4px; }
+.zn-step { flex: 1; position: relative; padding-top: 20px; }
+.zn-step::before { content: ""; position: absolute; top: 6px; left: 0; right: 0; height: 2px; background: var(--zn-line-2); }
+.zn-step:first-child::before { left: 50%; }
+.zn-step:last-child::before { right: 50%; }
+.zn-step.done::before, .zn-step.now::before { background: var(--zn-accent); }
+.zn-step.now ~ .zn-step::before { background: var(--zn-line-2); }
+.zn-step::after {
+  content: ""; position: absolute; top: 1px; left: calc(50% - 6px);
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--zn-surface); border: 2px solid var(--zn-line-2); box-sizing: border-box;
+}
+.zn-step.done::after { background: var(--zn-accent); border-color: var(--zn-accent); }
+.zn-step.now::after { border-color: var(--zn-accent); border-width: 4px; }
+.zn-step > span { display: block; text-align: center; font-size: 11px; color: var(--zn-ink-3); font-weight: 600; }
+.zn-step.done > span, .zn-step.now > span { color: var(--zn-ink); }
+
+.zn-note {
+  font-size: 12.5px; color: var(--zn-ink-2); background: var(--zn-surface-2);
+  border-radius: var(--zn-radius); padding: 10px 12px; margin-top: 14px;
+}
+
+/* ---------- 9. Task rows -------------------------------------------------- */
+
+.zn-tasks { display: grid; gap: 8px; }
+.zn-task {
+  display: grid; grid-template-columns: 32px 1fr auto; gap: 13px; align-items: center;
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius); padding: 12px 14px;
+  text-decoration: none; color: inherit;
+}
+.zn-task:hover { border-color: var(--zn-line-2); color: inherit; }
+.zn-task.locked { background: var(--zn-lock-soft); border-style: dashed; pointer-events: none; }
+.zn-task-ico {
+  width: 32px; height: 32px; border-radius: var(--zn-radius); display: grid; place-items: center;
+  font-size: 15px; background: var(--zn-accent-soft); color: var(--zn-accent);
+}
+.zn-task.locked .zn-task-ico { background: var(--zn-surface); color: var(--zn-lock); }
+.zn-task-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; display: flex; align-items: center; gap: 7px; }
+.zn-task-sub { font-size: 11.5px; color: var(--zn-ink-3); }
+.zn-task-pct { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.zn-nextstep {
+  display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-left: 3px solid var(--zn-accent); border-radius: var(--zn-radius);
+  padding: 17px 20px; margin-bottom: 18px; box-shadow: var(--zn-shadow);
+}
+.zn-nextstep-label { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--zn-accent); margin: 0 0 5px; }
+.zn-nextstep h3 { font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+.zn-nextstep p { margin: 0; font-size: 13px; color: var(--zn-ink-2); }
+
+/* ---------- 10. Form idiom ------------------------------------------------
+   ZenHub's own section pattern: a 3px accent rule with an uppercase heading.
+   Carried over so the two systems read as relatives. */
+
+.zn-section { border-left: 3px solid var(--zn-accent); padding-left: 13px; margin-bottom: 18px; }
+.zn-section > h5,
+.zn-section > h6 {
+  color: var(--zn-accent); font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: .05em; margin: 0 0 11px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.zn-field-label {
+  color: var(--zn-ink-3); font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: .04em; margin-bottom: 2px; font-weight: 600;
+}
+.zn-field-val { font-weight: 600; font-size: 13.5px; }
+.zn-field-empty { color: var(--zn-ink-3); font-weight: 400; font-style: italic; }
+
+.zn-formnav {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--zn-line); flex-wrap: wrap;
+}
+.zn-formnav-hint { font-size: 11.5px; color: var(--zn-ink-3); }
+
+.zn-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; }
+.zn-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 600; padding: 4px 9px; border-radius: 4px;
+  border: 1px solid transparent; background: transparent; color: var(--zn-accent);
+  text-decoration: none;
+}
+.zn-chip:hover { background: var(--zn-accent-soft); color: var(--zn-accent); }
+.zn-chip.done { color: var(--zn-ok); }
+.zn-chip.active { color: var(--zn-ink); background: var(--zn-surface); border-color: var(--zn-line); font-weight: 700; }
+.zn-chip .d { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex: none; }
+
+/* Existing views use Bootstrap's plaintext inputs inside a disabled fieldset
+   for read mode, then enable them for edit. Keep that behaviour but restyle
+   the edit state to the accent. */
+fieldset:not(:disabled) .form-control-plaintext.border-bottom,
+.zn-input {
+  border-bottom: 1.5px solid var(--zn-accent) !important;
+  background: var(--zn-accent-soft);
+  border-radius: 3px 3px 0 0;
+  padding: 4px 7px !important;
+}
+
+/* ---------- 11. Documents ------------------------------------------------- */
+
+.zn-drop {
+  border: 1.5px dashed var(--zn-line-2); border-radius: var(--zn-radius);
+  background: var(--zn-accent-soft); padding: 18px; text-align: center; margin-bottom: 16px;
+}
+.zn-drop-icon {
+  width: 36px; height: 36px; border-radius: var(--zn-radius);
+  background: var(--zn-surface); color: var(--zn-accent);
+  display: grid; place-items: center; margin: 0 auto 8px; font-size: 16px;
+  border: 1px solid var(--zn-line);
+}
+.zn-drop b { font-size: 13.5px; font-weight: 700; display: block; margin-bottom: 3px; }
+.zn-drop span { font-size: 11.5px; color: var(--zn-ink-3); }
+
+.zn-group-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--zn-ink-3); margin: 16px 0 7px;
+}
+.zn-group-label:first-of-type { margin-top: 0; }
+
+.zn-doc-list { display: grid; gap: 7px; }
+.zn-doc {
+  display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; align-items: center;
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius); padding: 10px 12px;
+}
+.zn-doc.missing { border-style: dashed; background: transparent; }
+.zn-doc.required-missing { border-color: var(--zn-warn); background: var(--zn-warn-soft); border-style: solid; }
+.zn-doc-ico {
+  width: 32px; height: 32px; border-radius: 5px; display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; background: var(--zn-accent-soft); color: var(--zn-accent);
+}
+.zn-doc.missing .zn-doc-ico { background: var(--zn-lock-soft); color: var(--zn-ink-3); }
+.zn-doc.required-missing .zn-doc-ico { background: var(--zn-surface); color: var(--zn-warn); }
+.zn-doc-name { font-size: 13px; font-weight: 700; }
+.zn-doc-meta { font-size: 11.5px; color: var(--zn-ink-3); font-variant-numeric: tabular-nums; }
+
+/* ---------- 12. Careers --------------------------------------------------- */
+
+.zn-searchbar { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.zn-searchbar input, .zn-searchbar select {
+  font-size: 13px; border: 1px solid var(--zn-line-2); border-radius: var(--zn-radius);
+  padding: 9px 12px; background: var(--zn-surface); color: var(--zn-ink); font-family: inherit;
+}
+.zn-searchbar input { flex: 1; min-width: 180px; }
+
+.zn-joblist { display: grid; gap: 10px; }
+.zn-job {
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 16px 18px; box-shadow: var(--zn-shadow);
+  display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+}
+.zn-job h4 { font-size: 16px; font-weight: 700; margin: 0 0 5px; letter-spacing: -.2px; }
+.zn-job-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 7px; }
+.zn-job-excerpt { font-size: 12.5px; color: var(--zn-ink-2); margin: 0; }
+.zn-job-meta { font-size: 11.5px; color: var(--zn-ink-3); margin-top: 6px; }
+
+.zn-jd-head {
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 22px 24px; margin-bottom: 14px; box-shadow: var(--zn-shadow);
+}
+.zn-jd-head h1 { font-size: 23px; font-weight: 700; margin: 0 0 8px; letter-spacing: -.4px; }
+.zn-jd-body {
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 20px 24px; box-shadow: var(--zn-shadow);
+  white-space: pre-wrap; font-size: 13.5px; color: var(--zn-ink-2); line-height: 1.65;
+}
+
+.zn-whatnext { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+.zn-wn { background: var(--zn-surface-2); border-radius: var(--zn-radius); padding: 11px 12px; }
+.zn-wn b { display: block; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--zn-accent); margin-bottom: 4px; }
+.zn-wn span { font-size: 11.5px; color: var(--zn-ink-2); }
+
+/* ---------- 13. Auth ------------------------------------------------------ */
+
+.zn-auth-wrap { display: flex; align-items: center; justify-content: center; padding: 30px 20px; min-height: calc(100vh - 53px); }
+.zn-auth {
+  display: grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 900px;
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); overflow: hidden; box-shadow: var(--zn-shadow-pop);
+}
+.zn-auth-aside {
+  background: var(--zn-accent); color: var(--zn-on-accent);
+  padding: 34px 32px; display: flex; flex-direction: column; justify-content: center;
+}
+.zn-auth-aside img { height: 44px; width: auto; flex: none; object-fit: contain; align-self: flex-start; margin-bottom: 14px; filter: brightness(0) invert(1); }
+.zn-auth-aside h2 { font-size: 24px; font-weight: 700; margin: 0 0 10px; letter-spacing: -.4px; line-height: 1.2; }
+.zn-auth-aside p { font-size: 13.5px; opacity: .92; margin: 0 0 18px; max-width: 34ch; }
+.zn-auth-steps { display: grid; gap: 9px; list-style: none; margin: 0; padding: 0; }
+.zn-auth-step { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; font-size: 12.5px; opacity: .95; }
+.zn-auth-step i {
+  font-style: normal; width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid currentColor; display: grid; place-items: center;
+  font-size: 10px; font-weight: 700;
+}
+.zn-auth-form { padding: 34px 36px; display: flex; flex-direction: column; justify-content: center; }
+.zn-auth-form h2 { font-size: 21px; font-weight: 700; margin: 0 0 4px; letter-spacing: -.3px; }
+
+.zn-fld { margin-bottom: 13px; }
+.zn-fld label {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--zn-ink-3); margin-bottom: 4px;
+}
+.zn-fld input, .zn-fld select {
+  width: 100%; font-size: 13.5px; border: 1px solid var(--zn-line-2);
+  border-radius: var(--zn-radius); padding: 9px 11px;
+  background: var(--zn-surface); color: var(--zn-ink); font-family: inherit;
+}
+.zn-fld input:focus, .zn-fld select:focus { outline: 2px solid var(--zn-accent); outline-offset: 1px; border-color: var(--zn-accent); }
+.zn-fld-hint { font-size: 11.5px; color: var(--zn-ink-3); margin-top: 4px; }
+.zn-auth-alt { font-size: 12.5px; color: var(--zn-ink-3); margin-top: 16px; text-align: center; }
+
+/* ---------- 14. Feedback -------------------------------------------------- */
+
+.zn-toast {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--zn-ok-soft); color: var(--zn-ok);
+  border-radius: var(--zn-radius); padding: 8px 13px; font-size: 12.5px; font-weight: 700;
+  margin-bottom: 14px;
+}
+.zn-toast.error { background: var(--zn-warn-soft); color: var(--zn-warn); }
+.zn-toast ul { margin: 0; padding-left: 16px; font-weight: 600; }
+
+.zn-empty {
+  text-align: center; padding: 26px 20px;
+  background: var(--zn-lock-soft); border: 1px dashed var(--zn-line-2);
+  border-radius: var(--zn-radius-lg); color: var(--zn-ink-2); font-size: 13px;
+}
+.zn-empty b { display: block; font-size: 15px; font-weight: 700; color: var(--zn-ink); margin-bottom: 4px; }
+
+/* ---------- 15. Responsive ------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .zn-shell { grid-template-columns: 1fr; }
+  .zn-rail { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--zn-line); }
+  .zn-auth { grid-template-columns: 1fr; }
+  .zn-auth-aside { display: none; }
+  .zn-nextstep, .zn-job { grid-template-columns: 1fr; }
+  .zn-whatnext { grid-template-columns: 1fr 1fr; }
+  .zn-topnav a { padding: 6px 10px; font-size: 12.5px; }
+  .zn-user-meta { display: none; }
+}
+
+@media (max-width: 560px) {
+  .zn-canvas, .zn-work { padding: 16px 14px; }
+  .zn-topbar { padding: 10px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ---------- 16. Landing page ---------------------------------------------
+   The front door. Before this, "/" redirected straight into the job listings,
+   so a first-time visitor was dropped into an internal page with no account
+   of what this portal is or what it is for. */
+
+.zn-landing { display: flex; flex-direction: column; min-height: calc(100vh - 53px); }
+
+.zn-hero {
+  background: var(--zn-surface);
+  border-bottom: 1px solid var(--zn-line);
+  padding: 64px 22px 58px;
+  text-align: center;
+}
+.zn-hero-inner { max-width: 640px; margin: 0 auto; }
+.zn-hero-mark { height: 64px; width: auto; object-fit: contain; margin-bottom: 20px; }
+.zn-hero-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--zn-accent); margin: 0 0 12px;
+}
+.zn-hero h1 {
+  font-size: clamp(30px, 5vw, 42px); font-weight: 700; letter-spacing: -1px;
+  line-height: 1.08; margin: 0 0 14px; color: var(--zn-ink); text-wrap: balance;
+}
+.zn-hero-lede {
+  font-size: 15.5px; color: var(--zn-ink-2); margin: 0 auto 24px; max-width: 52ch; line-height: 1.6;
+}
+.zn-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.zn-hero-note { font-size: 12.5px; color: var(--zn-ink-3); margin: 18px 0 0; }
+
+.zn-doors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+.zn-door {
+  display: flex; flex-direction: column;
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 20px 20px 18px;
+  text-decoration: none; color: inherit;
+}
+.zn-door:hover { border-color: var(--zn-accent); color: inherit; }
+.zn-door-ico {
+  width: 34px; height: 34px; border-radius: var(--zn-radius); display: grid; place-items: center;
+  background: var(--zn-accent-soft); color: var(--zn-accent); font-size: 15px; margin-bottom: 12px;
+}
+.zn-door b { font-size: 14.5px; font-weight: 700; margin-bottom: 5px; }
+.zn-door > span:not(.zn-door-ico):not(.zn-door-go) {
+  font-size: 12.5px; color: var(--zn-ink-2); line-height: 1.5;
+}
+.zn-door-go {
+  margin-top: auto; padding-top: 14px;
+  font-size: 12px; font-weight: 700; color: var(--zn-accent);
+}
+
+.zn-landing-foot {
+  text-align: center; font-size: 12px; color: var(--zn-ink-3); margin: 26px 0 0;
+}
+
+@media (max-width: 820px) {
+  .zn-doors { grid-template-columns: 1fr; }
+  .zn-hero { padding: 44px 18px 40px; }
+}
+@media (max-width: 560px) {
+  .zn-hero-actions { flex-direction: column; }
+  .zn-hero-actions .zn-btn { width: 100%; }
+}
+
+/* ---------- 17. Long forms -----------------------------------------------
+   Registration and the application form sections. Bootstrap's form-floating
+   was cramping labels against values and giving no room for required/optional
+   marks, so these use stacked labels on an explicit 12-column grid instead. */
+
+.zn-formhead {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 16px;
+}
+
+.zn-formcard { margin-bottom: 12px; }
+.zn-formcard-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.zn-help { font-size: 12.5px; color: var(--zn-ink-3); margin: -4px 0 14px; max-width: 64ch; }
+
+.zn-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px 16px; }
+.zn-col-full { grid-column: span 12; }
+.zn-col-6 { grid-column: span 6; }
+.zn-col-5 { grid-column: span 5; }
+.zn-col-4 { grid-column: span 4; }
+.zn-col-3 { grid-column: span 3; }
+.zn-col-2 { grid-column: span 2; }
+
+/* zn-fld is shared with the auth panels; inside a grid it must not carry the
+   bottom margin that spacing there relies on. */
+.zn-grid .zn-fld { margin-bottom: 0; min-width: 0; }
+
+.zn-fld input[readonly] {
+  background: var(--zn-surface-2); color: var(--zn-ink-3); cursor: default;
+}
+.zn-fld input:disabled, .zn-fld select:disabled {
+  background: var(--zn-surface-2); color: var(--zn-ink-3); cursor: not-allowed;
+}
+.zn-fld select {
+  width: 100%; font-size: 13.5px; border: 1px solid var(--zn-line-2);
+  border-radius: var(--zn-radius); padding: 9px 11px;
+  background: var(--zn-surface); color: var(--zn-ink); font-family: inherit;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%238a7e76' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 11px center;
+  padding-right: 30px;
+}
+
+/* Required and optional are marked on the label itself, so the distinction is
+   readable without a legend and without colour alone carrying it. */
+.zn-req { color: var(--zn-warn); font-weight: 700; margin-left: 1px; }
+.zn-opt {
+  color: var(--zn-ink-3); font-weight: 500; font-size: 10px;
+  text-transform: none; letter-spacing: 0; margin-left: 4px;
+}
+
+.zn-check { display: inline-flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: 12.5px; color: var(--zn-ink-2); }
+.zn-check input { margin-top: 2px; accent-color: var(--zn-accent); width: 15px; height: 15px; flex: none; }
+.zn-check-lg { font-size: 13.5px; align-items: flex-start; padding: 13px 15px; background: var(--zn-accent-soft); border-radius: var(--zn-radius); }
+
+.zn-submitbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 16px 20px; margin-top: 4px;
+}
+
+/* ---------- 18. Modals ---------------------------------------------------- */
+
+.zn-modal { border: 1px solid var(--zn-line); border-radius: var(--zn-radius-lg); background: var(--zn-surface); }
+.zn-modal .modal-header { border-bottom: 1px solid var(--zn-line); padding: 16px 20px; }
+.zn-modal .modal-title { font-size: 16px; font-weight: 700; letter-spacing: -.2px; color: var(--zn-ink); }
+.zn-modal .modal-body { padding: 18px 20px; }
+.zn-modal .modal-footer { border-top: 1px solid var(--zn-line); padding: 13px 20px; gap: 8px; }
+.zn-modal-lede { font-size: 13.5px; color: var(--zn-ink-2); margin: 0 0 16px; }
+.zn-modal-foot { font-size: 12.5px; color: var(--zn-ink-3); margin: 16px 0; }
+
+.zn-privacy-points { display: grid; gap: 12px; }
+.zn-privacy-point { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; }
+.zn-privacy-ico {
+  width: 30px; height: 30px; border-radius: var(--zn-radius); display: grid; place-items: center;
+  background: var(--zn-accent-soft); color: var(--zn-accent); font-size: 14px;
+}
+.zn-privacy-point b { display: block; font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.zn-privacy-point span { font-size: 12.5px; color: var(--zn-ink-2); line-height: 1.5; }
+
+/* ---------- 19. Long-form prose (privacy notice) -------------------------- */
+
+.zn-prose h2 {
+  font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--zn-accent); margin: 22px 0 8px; padding-left: 11px;
+  border-left: 3px solid var(--zn-accent);
+}
+.zn-prose h2:first-child { margin-top: 0; }
+.zn-prose p, .zn-prose li { font-size: 13.5px; color: var(--zn-ink-2); line-height: 1.65; }
+.zn-prose p { margin: 0 0 10px; }
+.zn-prose ul { margin: 0 0 12px; padding-left: 20px; }
+.zn-prose li { margin-bottom: 4px; }
+
+/* Anything still awaiting HR or legal is marked visibly rather than papered
+   over with placeholder prose. */
+.zn-confirm, .zn-confirm-block {
+  color: var(--zn-warn); background: var(--zn-warn-soft);
+  border-radius: 4px; font-size: 12.5px;
+}
+.zn-confirm { padding: 1px 6px; }
+.zn-confirm-block { display: block; padding: 12px 14px; margin: 0 0 12px; line-height: 1.55; }
+
+@media (max-width: 760px) {
+  .zn-col-6, .zn-col-5, .zn-col-4, .zn-col-3, .zn-col-2 { grid-column: span 12; }
+  .zn-submitbar { flex-direction: column; align-items: stretch; }
+  .zn-submitbar .zn-btn { width: 100%; }
+}
+
+/* ---------- 20. Locked / derived fields -----------------------------------
+   For values the system owns rather than the applicant — the position applied
+   for comes from the job posting, so it is shown, not asked. */
+
+.zn-locked-field {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  background: var(--zn-accent-soft); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius); padding: 14px 16px; flex-wrap: wrap;
+}
+.zn-locked-field.muted { background: var(--zn-surface-2); }
+.zn-locked-label {
+  display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--zn-ink-3); margin-bottom: 3px;
+}
+.zn-locked-field b { display: block; font-size: 15px; font-weight: 700; color: var(--zn-ink); }
+.zn-locked-meta { display: block; font-size: 12px; color: var(--zn-ink-3); margin-top: 3px; }
+
+/* ---------- 21. Application Form: section chrome --------------------------
+   The eight sections are one form. This chrome is what makes that true on
+   screen — position, progress and movement, present on every section. */
+
+.zn-formtop {
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 18px 20px 0; margin-bottom: 14px;
+}
+.zn-formtop-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.zn-formtop-head .zn-page-title { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.zn-formtop-progress { min-width: 210px; }
+.zn-formtop-progress .t {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 11.5px; font-weight: 600; color: var(--zn-ink-3); margin-bottom: 5px;
+}
+.zn-formtop-progress .t b { font-size: 15px; color: var(--zn-ink); }
+.zn-formtop-progress .zn-count { display: block; margin-top: 6px; font-weight: 500; }
+
+.zn-stepper {
+  display: flex; gap: 2px; overflow-x: auto; margin: 0 -20px; padding: 0 20px;
+  border-top: 1px solid var(--zn-divider);
+  scrollbar-width: thin;
+}
+.zn-stepper::-webkit-scrollbar { height: 4px; }
+.zn-stepper::-webkit-scrollbar-thumb { background: var(--zn-line-2); border-radius: 4px; }
+
+.zn-stepper-item {
+  display: flex; align-items: center; gap: 7px; flex: none;
+  padding: 12px 12px; text-decoration: none; color: var(--zn-ink-3);
+  border-bottom: 2px solid transparent; font-size: 12.5px; font-weight: 600;
+  white-space: nowrap;
+}
+.zn-stepper-item:hover { color: var(--zn-ink); }
+.zn-stepper-item.active { color: var(--zn-accent); border-bottom-color: var(--zn-accent); }
+
+.zn-stepper-mark {
+  width: 20px; height: 20px; border-radius: 50%; flex: none;
+  display: grid; place-items: center; font-size: 10px; font-weight: 700;
+  border: 1.5px solid var(--zn-line-2); background: var(--zn-surface); color: var(--zn-ink-3);
+}
+.zn-stepper-item.done .zn-stepper-mark { background: var(--zn-ok); border-color: var(--zn-ok); color: #fff; }
+.zn-stepper-item.part .zn-stepper-mark { border-color: var(--zn-accent); background: var(--zn-accent-soft); color: var(--zn-accent); }
+.zn-stepper-item.active .zn-stepper-mark { border-color: var(--zn-accent); color: var(--zn-accent); }
+.zn-stepper-item.active.done .zn-stepper-mark { color: #fff; }
+
+.zn-missing {
+  display: grid; grid-template-columns: 18px 1fr; gap: 11px; align-items: start;
+  background: var(--zn-accent-soft); border: 1px solid var(--zn-line);
+  border-left: 3px solid var(--zn-accent);
+  border-radius: var(--zn-radius); padding: 12px 15px; margin-bottom: 14px;
+}
+.zn-missing i { color: var(--zn-accent); font-size: 14px; margin-top: 1px; }
+.zn-missing b { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
+.zn-missing span { font-size: 12.5px; color: var(--zn-ink-2); }
+
+/* ---------- 22. Repeating-entry sections ---------------------------------
+   Family, education, employment and the rest are lists. Each saved entry is a
+   readable summary card rather than a table row, so the same layout works on
+   a phone without horizontal scrolling. */
+
+.zn-entries { display: grid; gap: 9px; margin-bottom: 16px; }
+.zn-entry {
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius); padding: 14px 16px;
+}
+.zn-entry-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 9px; flex-wrap: wrap;
+}
+.zn-entry-title { font-size: 14px; font-weight: 700; color: var(--zn-ink); margin: 0; }
+.zn-entry-sub { font-size: 12px; color: var(--zn-ink-3); margin: 2px 0 0; }
+.zn-entry-actions { display: flex; align-items: center; gap: 12px; }
+
+.zn-entry-facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px;
+  padding-top: 10px; border-top: 1px solid var(--zn-divider);
+}
+.zn-fact-label {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--zn-ink-3); margin-bottom: 2px;
+}
+.zn-fact-value { font-size: 13px; font-weight: 600; color: var(--zn-ink); }
+.zn-fact-value.empty { color: var(--zn-warn); font-weight: 500; font-style: italic; }
+
+.zn-addbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; margin-bottom: 14px;
+}
+.zn-addbar h3 { font-size: 14px; font-weight: 700; margin: 0; }
+.zn-addbar p { font-size: 12.5px; color: var(--zn-ink-3); margin: 2px 0 0; }
+
+.zn-declare {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--zn-surface-2); border: 1px dashed var(--zn-line-2);
+  border-radius: var(--zn-radius); padding: 13px 15px; margin-bottom: 14px;
+}
+.zn-declare label { margin: 0; font-size: 13px; color: var(--zn-ink-2); }
+
+@media (max-width: 760px) {
+  .zn-formtop-head { flex-direction: column; gap: 14px; }
+  .zn-formtop-progress { min-width: 0; width: 100%; }
+  .zn-stepper-label { display: none; }
+  .zn-stepper-item { padding: 12px 10px; }
+  .zn-stepper-item.active .zn-stepper-label { display: inline; }
+}
+
+/* ---------- 23. Identity header (Personal details) ------------------------ */
+
+.zn-identity { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.zn-identity-photo { display: flex; flex-direction: column; align-items: center; gap: 7px; flex: none; }
+.zn-identity-photo img,
+.zn-identity-initials {
+  width: 84px; height: 84px; border-radius: var(--zn-radius-lg);
+  object-fit: cover; border: 1px solid var(--zn-line);
+}
+.zn-identity-initials {
+  display: grid; place-items: center;
+  background: var(--zn-accent-soft); color: var(--zn-accent);
+  font-size: 28px; font-weight: 700;
+}
+.zn-photo-btn { font-size: 11.5px; }
+.zn-identity-main { flex: 1; min-width: 200px; }
+.zn-identity-name { font-size: 22px; font-weight: 700; letter-spacing: -.4px; margin: 0 0 6px; color: var(--zn-ink); }
+.zn-identity-meta { font-size: 12.5px; color: var(--zn-ink-3); margin: 0 0 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.zn-identity-meta b { color: var(--zn-ink); font-weight: 700; }
+
+/* A disabled fieldset is read mode — values stay legible, chrome recedes. */
+#personal-fieldset:disabled input,
+#personal-fieldset:disabled select {
+  background: transparent; border-color: transparent;
+  color: var(--zn-ink); font-weight: 600; padding-left: 0; cursor: default;
+  -webkit-appearance: none; appearance: none; background-image: none;
+}
+#personal-fieldset:disabled .zn-fld { border-bottom: 1px solid var(--zn-divider); }
+#personal-fieldset:disabled input::placeholder { color: var(--zn-ink-3); font-weight: 400; }
+
+/* ---------- 24. Assessments ----------------------------------------------
+   Their own chrome, deliberately separate from the Application Form — an
+   application-progress rail on an assessment would misrepresent where the
+   applicant is. */
+
+.zn-assess-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.zn-assess-head .zn-page-title { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.zn-assess-time {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--zn-ink-3);
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius); padding: 7px 12px;
+}
+
+.zn-assess-note {
+  display: grid; grid-template-columns: 18px 1fr; gap: 11px; align-items: start;
+  background: var(--zn-accent-soft); border: 1px solid var(--zn-line);
+  border-left: 3px solid var(--zn-accent);
+  border-radius: var(--zn-radius); padding: 13px 16px; margin-bottom: 16px;
+}
+.zn-assess-note.done { background: var(--zn-ok-soft); border-left-color: var(--zn-ok); }
+.zn-assess-note i { color: var(--zn-accent); font-size: 14px; margin-top: 1px; }
+.zn-assess-note.done i { color: var(--zn-ok); }
+.zn-assess-note b { display: block; font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+.zn-assess-note span { font-size: 12.5px; color: var(--zn-ink-2); }
+
+.zn-assess-body {
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 22px 24px;
+}
+
+/* The eleven quiz views keep their own markup — Bootstrap form-checks and
+   tables. These rules bring that markup into the design system without
+   touching the answer-collection logic inside them. */
+.zn-assess-body .form-check {
+  padding: 10px 12px 10px 34px; border-radius: var(--zn-radius);
+  border: 1px solid transparent; margin-bottom: 4px; font-size: 14px;
+}
+.zn-assess-body .form-check:hover { background: var(--zn-surface-2); border-color: var(--zn-line); }
+.zn-assess-body .form-check-input { border: 1px solid var(--zn-line-2); margin-left: -24px; }
+.zn-assess-body .form-check-input:checked { background-color: var(--zn-accent); border-color: var(--zn-accent); }
+.zn-assess-body .form-check-input:checked ~ .form-check-label { font-weight: 700; color: var(--zn-accent); }
+.zn-assess-body .form-check-label { cursor: pointer; }
+
+.zn-assess-body h1, .zn-assess-body h2, .zn-assess-body h3,
+.zn-assess-body h4, .zn-assess-body h5, .zn-assess-body h6 {
+  font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--zn-accent); margin: 22px 0 10px; padding-left: 11px;
+  border-left: 3px solid var(--zn-accent);
+}
+.zn-assess-body > :first-child { margin-top: 0; }
+
+.zn-assess-body table { width: 100%; margin-bottom: 16px; font-size: 13.5px; }
+.zn-assess-body table th {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--zn-ink-3); border-bottom: 1px solid var(--zn-line); padding: 9px 10px; text-align: left;
+}
+.zn-assess-body table td { padding: 9px 10px; border-bottom: 1px solid var(--zn-divider); color: var(--zn-ink-2); }
+.zn-assess-body table tr:last-child td { border-bottom: none; }
+
+.zn-assess-body .btn { font-family: inherit; }
+.zn-assess-body .card { border: 1px solid var(--zn-line); border-radius: var(--zn-radius); box-shadow: none; }
+
+/* Index of all eleven. */
+.zn-assess-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 9px; }
+.zn-assess-card {
+  display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; align-items: center;
+  background: var(--zn-surface); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius); padding: 13px 15px;
+  text-decoration: none; color: inherit;
+}
+.zn-assess-card:hover { border-color: var(--zn-accent); color: inherit; }
+.zn-assess-card.done { background: var(--zn-ok-soft); border-color: var(--zn-ok-soft); }
+.zn-assess-mark {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 11px; font-weight: 700;
+  border: 1.5px solid var(--zn-line-2); background: var(--zn-surface); color: var(--zn-ink-3);
+}
+.zn-assess-card.done .zn-assess-mark { background: var(--zn-ok); border-color: var(--zn-ok); color: #fff; }
+.zn-assess-name { font-size: 13px; font-weight: 700; }
+.zn-assess-mins { font-size: 11px; color: var(--zn-ink-3); font-weight: 600; }
+
+/* Assessment controls. The quiz views keep their JS hook classes (*-ans,
+   btn-rank-opt, rank, form-check-label) untouched — only presentation moves. */
+.zn-assess-body .zn-option {
+  border: 1px solid var(--zn-line); background: var(--zn-surface);
+}
+.zn-assess-body .zn-option:hover { border-color: var(--zn-accent); background: var(--zn-accent-soft); }
+
+.zn-rank-opt {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  font-family: inherit; font-size: 13.5px; font-weight: 600;
+  background: var(--zn-surface); color: var(--zn-ink);
+  border: 1px solid var(--zn-line); border-radius: var(--zn-radius);
+  padding: 10px 13px;
+}
+.zn-rank-opt:hover { border-color: var(--zn-accent); background: var(--zn-accent-soft); color: var(--zn-accent); }
+
+.zn-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 16px; }
+.zn-table th {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--zn-ink-3); border-bottom: 1px solid var(--zn-line); padding: 9px 10px; text-align: left;
+}
+.zn-table td { padding: 9px 10px; border-bottom: 1px solid var(--zn-divider); color: var(--zn-ink-2); }
+.zn-table tr:last-child td { border-bottom: none; }
+
+.zn-card-subhead {
+  font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--zn-ink-3); padding: 12px 16px; border-bottom: 1px solid var(--zn-line);
+}
+
+/* Bootstrap's btn-check pattern (colour + maya) toggles a sibling label. */
+.zn-assess-body .btn-check:checked + label,
+.zn-assess-body .btn-check:checked + .btn {
+  background: var(--zn-accent-soft); border-color: var(--zn-accent); color: var(--zn-accent);
+}
+
+/* Question text is display, not input — but it stays an <input> because the
+   assessment scripts read its value and data-item. */
+.zn-question {
+  width: 100%; border: none; background: transparent; padding: 0;
+  font-family: inherit; font-size: 14.5px; font-weight: 600; color: var(--zn-ink);
+  cursor: default;
+}
+.zn-question:focus { outline: none; }

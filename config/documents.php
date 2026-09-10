@@ -27,14 +27,37 @@ return [
     | to supply their own label (see DocumentController::store()).
     */
     'types' => [
+        'resume_cv'             => 'Résumé / CV',
+        'picture_2x2'           => '2x2 Picture',
+        'cover_letter'          => 'Cover Letter',
         'psa_birth_certificate' => 'PSA Birth Certificate',
         'nbi_police_clearance'  => 'NBI / Police Clearance',
         'tor_diploma'           => 'TOR / Diploma',
         'certificate_employment' => 'Certificate of Employment',
         'government_ids'        => 'Government IDs (SSS / PhilHealth / Pag-IBIG / TIN)',
-        'id_photo'              => 'ID Photo',
-        'resume_cv'             => 'Résumé / CV',
         'other'                 => 'Other',
+    ],
+
+    /*
+    | The actual process: an applicant submits a résumé and a 2x2 picture, with
+    | a cover letter optional. Everything else in 'types' belongs to a later
+    | stage and is not asked for now — showing all eight at once presented an
+    | applicant with five documents nobody was requesting yet.
+    */
+    'required' => ['resume_cv', 'picture_2x2'],
+    'optional' => ['cover_letter'],
+
+    /*
+    | Collected later in the pipeline (pre-employment requirements). Listed so
+    | the type exists for HR and for the eventual 201 file, but deliberately
+    | not surfaced to applicants during initial application.
+    */
+    'later_stage' => [
+        'psa_birth_certificate',
+        'nbi_police_clearance',
+        'tor_diploma',
+        'certificate_employment',
+        'government_ids',
     ],
 
     /*

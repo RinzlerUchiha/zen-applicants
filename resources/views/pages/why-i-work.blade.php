@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
@@ -76,7 +76,7 @@
     <div id="form-why-i-work" class="mx-md-5 mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">Below is a list of outcomes that a person might receive for working. Read through all the outcomes and then rank them from 1 to 12 in order of importance (the most important outcome would be ranked 1)</div>
-            <table class="table" id="tbl-why-i-work">
+            <table class="zn-table" id="tbl-why-i-work">
                 <tbody>
                     <tr>
                         <th>Rank</th>
@@ -86,7 +86,7 @@
                     @foreach ($answerList as $i => $item)
                         <tr data-item="{{ $i }}">
                             <td>
-                                <button id="item-{{ $i }}" type="button" class="btn btn-outline-secondary rank" data-bs-toggle="modal" data-bs-target="#optionModal" value="{{ $answer?->{'outcome_'.$i} ?? $loop->iteration }}">{{ $answer?->{'outcome_'.$i} ?? $loop->iteration }}</button>
+                                <button id="item-{{ $i }}" type="button" class="zn-btn zn-btn-out rank" data-bs-toggle="modal" data-bs-target="#optionModal" value="{{ $answer?->{'outcome_'.$i} ?? $loop->iteration }}">{{ $answer?->{'outcome_'.$i} ?? $loop->iteration }}</button>
                             </td>
                             <td>{{ $item['cat'] }}</td>
                             <td>{{ $item['desc'] }}</td>
@@ -98,7 +98,7 @@
         @if (!$answer)
             <br>
             <div class="d-flex justify-content-center gap-5">
-                <button class="btn btn-primary" id="btn-submit">Submit</button>
+                <button class="zn-btn" id="btn-submit">Submit</button>
             </div>
         @endif
     </div>
@@ -113,18 +113,18 @@
                 <div class="modal-body">
                     <div class="container-fluid">
                         <div class="row row-cols-3 g-1 mb-3">
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="1">1</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="2">2</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="3">3</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="4">4</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="5">5</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="6">6</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="7">7</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="8">8</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="9">9</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="10">10</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="11">11</button></div>
-                            <div class="col"><button class="btn btn-light btn-rank-opt w-100" value="12">12</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="1">1</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="2">2</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="3">3</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="4">4</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="5">5</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="6">6</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="7">7</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="8">8</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="9">9</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="10">10</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="11">11</button></div>
+                            <div class="col"><button class="zn-rank-opt btn-rank-opt w-100" value="12">12</button></div>
                         </div>
                     </div>
                 </div>

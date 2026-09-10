@@ -8,6 +8,28 @@ use Illuminate\Support\Facades\DB;
 
 class JobListingController extends Controller
 {
+    /**
+     * The public landing page — the first thing a visitor sees.
+     *
+     * Previously "/" redirected straight to the job listings, dropping a
+     * first-time visitor into an internal page with no account of who we are
+     * or what applying involves. A signed-in applicant skips it: they have
+     * already landed, so their own application is the more useful destination.
+     */
+    public function landing()
+    {
+        if (auth()->check()) {
+            return redirect()->route('home');
+        }
+
+        $postings = DB::connection('zen')->table('tbl_job_posting')
+            ->where('status', 'Published')
+            ->orderByDesc('posted_at')
+            ->get();
+
+        return view('pages.landing', compact('postings'));
+    }
+
     public function index()
     {
         $postings = DB::connection('zen')->table('tbl_job_posting')

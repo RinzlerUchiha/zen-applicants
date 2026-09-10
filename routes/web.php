@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BasicAbstractReasoningController;
 use App\Http\Controllers\BasicMathController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\EnneagramController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JobListingController;
 use App\Http\Controllers\MayaController;
 use App\Http\Controllers\MiqController;
@@ -26,9 +28,13 @@ use App\Http\Controllers\VakController;
 use App\Http\Controllers\WhyIWorkController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('careers.index');
-});
+// The front door. A visitor gets the landing page; a signed-in applicant is
+// taken straight to their own application, since they have already landed.
+Route::get('/', [JobListingController::class, 'landing'])->name('landing');
+
+// Public: the full notice must be reachable without an account, since it is
+// what a visitor reads before deciding to create one.
+Route::view('/privacy', 'pages.privacy')->name('privacy');
 
 Route::get('/careers', [JobListingController::class, 'index'])->name('careers.index');
 Route::get('/careers/{id}', [JobListingController::class, 'show'])->name('careers.show');
@@ -42,6 +48,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
     // Route::get('/logout', [AuthController::class, 'logout']);
 
     Route::post('/careers/{id}/apply', [JobListingController::class, 'apply'])->name('careers.apply');
@@ -82,6 +90,8 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::get('/work/characterref', [CharacterRefController::class, 'index'])->name('characterref.index');
     Route::post('/work/characterref', [CharacterRefController::class, 'store'])->name('characterref.store');
     Route::delete('/work/characterref/{id}', [CharacterRefController::class, 'delete'])->name('characterref.delete');
+
+    Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
 
     Route::get('/personality/enneagram', [EnneagramController::class, 'show'])->name('enneagram.show');
     Route::post('/personality/enneagram', [EnneagramController::class, 'store'])->name('enneagram.store');

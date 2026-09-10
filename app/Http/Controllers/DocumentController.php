@@ -16,12 +16,26 @@ class DocumentController extends Controller
             ->orderByDesc('uploaded_at')
             ->get();
 
+        $required = collect(config('documents.required', []));
+        $optional = collect(config('documents.optional', []));
+        $laterStage = collect(config('documents.later_stage', []));
+
+        // Only what is actually being asked for now is offered. Later-stage
+        // documents stay defined in config for HR and the eventual 201 file,
+        // but showing them here would present the applicant with five items
+        // nobody has requested yet.
+        $selectable = collect(config('documents.types'))
+            ->reject(fn ($label, $key) => $laterStage->contains($key));
+
         return view('pages.documents', [
-            'documents' => $documents,
-            'types' => config('documents.types'),
-            'otherType' => config('documents.other_type'),
-            'maxSizeKb' => config('documents.max_size_kb'),
+            'documents'  => $documents,
+            'types'      => $selectable,
+            'required'   => $required,
+            'optional'   => $optional,
+            'otherType'  => config('documents.other_type'),
+            'maxSizeKb'  => config('documents.max_size_kb'),
             'extensions' => config('documents.extensions'),
+            'submitted'  => $required->filter(fn ($t) => $documents->contains('doc_type', $t))->count(),
         ]);
     }
 

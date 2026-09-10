@@ -45,8 +45,12 @@ class UserController extends Controller
         try {
 
             $validator = Validator::make($request->all(), [
+                // Acknowledgement of the privacy notice is captured at the point
+                // of collection, as RA 10173 requires the data subject to be
+                // informed before their information is processed.
+                'privacy-acknowledged' => 'accepted',
                 'app-code' => 'required|string|max:255',
-                'position-applied' => 'required|string|max:255',
+                'position-applied' => 'nullable|string|max:255',
                 'personal-firstname' => 'required|string|max:255',
                 'personal-middlename' => 'nullable|string|max:255', // Middlename can be optional
                 'personal-lastname' => 'required|string|max:255',
@@ -82,6 +86,10 @@ class UserController extends Controller
                 'personal-hdmf' => 'nullable|string|max:50', // HDMF (Pag-IBIG) number
                 'personal-phic' => 'nullable|string|max:50', // PHIC (PhilHealth) number
                 'personal-tin' => 'nullable|string|max:50', // TIN (Tax Identification Number)
+            ]);
+
+            $validator->setCustomMessages([
+                'privacy-acknowledged.accepted' => 'Please read and acknowledge the Privacy Notice before continuing.',
             ]);
 
             $validator->setAttributeNames([
@@ -152,13 +160,26 @@ class UserController extends Controller
                 //     // 'app_hiredt' => $validated['data'],
                 // ]);
 
+                // Resolved from the posting the applicant clicked through from,
+                // re-checked as still Published at this exact moment.
+                $intendedPosting = session('intended_job_id')
+                    ? DB::connection('zen')->table('tbl_job_posting')
+                        ->where('id', session('intended_job_id'))
+                        ->where('status', 'Published')
+                        ->first()
+                    : null;
+
                 $user = new User();
 
                 // app_code is this application's password column —
                 // User::getAuthPassword() already points Laravel at it. Stored
                 // hashed; AuthController verifies with Hash::check().
                 $user->app_code = Hash::make($validated['app-code']);
-                $user->app_posapplied = $validated['position-applied'];
+                // The job posting is the source of truth. Only fall back to a
+                // submitted value when the applicant is creating a profile
+                // without having chosen a position yet.
+                $user->app_posapplied = $intendedPosting->posting_title
+                    ?? ($validated['position-applied'] ?: null);
                 $user->app_date = now()->format('Y-m-d');
                 $user->app_lname = $validated['personal-lastname'];
                 $user->app_fname = $validated['personal-firstname'];
@@ -181,6 +202,10 @@ class UserController extends Controller
                 $user->app_age = Carbon::parse($validated['personal-birthdate'])->age;
                 $user->app_height = $validated['personal-height'];
                 $user->app_weight = $validated['personal-weight'];
+
+                // When they were informed. Stored because an acknowledgement
+                // that is not recorded cannot later be evidenced.
+                $user->app_privacy_ack_at = now();
 
                 $user->save();
             } else {
@@ -209,7 +234,12 @@ class UserController extends Controller
                 //     'app_weight' => $validated['personal-weight'],
                 // ]);
 
-                $user->app_posapplied = $validated['position-applied'];
+                // Editing your profile must never silently reassign the position
+                // you applied for — that is owned by the job posting, not this form.
+                if (!empty($validated['position-applied'])) {
+                    $user->app_posapplied = $validated['position-applied'];
+                }
+
                 $user->app_lname = $validated['personal-lastname'];
                 $user->app_fname = $validated['personal-firstname'];
                 $user->app_mname = $validated['personal-middlename'];

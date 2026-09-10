@@ -1,169 +1,171 @@
-@extends('layouts.layout')
+@extends('layouts.form-section')
 
-@section('content')
+@section('title', 'Eligibility / Licences')
 
-<style>
-    #form-license input,
-    #form-license select,
-    #license-list {
-        font-size: 12px;
+@section('section')
+
+<p class="zn-help" style="margin-top:0">Professional licences and civil service eligibilities. Leave this empty if you have none.</p>
+
+{{-- Saved entries. Cards rather than a table: the same layout reads on a
+     phone without horizontal scrolling, and each entry can carry its own
+     actions. --}}
+<div id="license-list">
+    @forelse ($license as $list)
+        <div class="zn-entry">
+            <div class="zn-entry-head">
+                <div>
+                    <p class="zn-entry-title">{{ $list->el_type }}</p>
+                    <p class="zn-entry-sub">{{ $list->el_profession ?: '—' }}</p>
+                </div>
+                <div class="zn-entry-actions">
+                    <button type="button" class="zn-link" style="font-size:12px"
+                            data-licenseid="{{ $list->el_id }}"
+                            data-type="{{ $list->el_type }}"
+                            data-profession="{{ $list->el_profession }}"
+                            data-registerdate="{{ $list->el_regdate }}"
+                            data-validuntil="{{ $list->el_expdate }}"
+                            data-attachment="{{ $list->el_file }}"
+                            onclick="edit_license(this)">Edit</button>
+                    <button type="button" class="zn-link" style="font-size:12px;color:var(--zn-warn)"
+                            data-licenseid="{{ $list->el_id }}"
+                            onclick="remove_license(this)">Remove</button>
+                </div>
+            </div>
+                <div class="zn-entry-facts">
+                    <div>
+                        <span class="zn-fact-label">Registered</span>
+                        <span class="zn-fact-value @if(!$list->el_regdate) empty @endif">{{ $list->el_regdate ?: 'Not provided' }}</span>
+                    </div>
+                    <div>
+                        <span class="zn-fact-label">Valid until</span>
+                        <span class="zn-fact-value @if(!$list->el_expdate) empty @endif">{{ $list->el_expdate ?: 'Not provided' }}</span>
+                    </div>
+                    @if ($list->el_file)
+                        <div>
+                            <span class="zn-fact-label">Attachment</span>
+                            <a class="zn-link" style="font-size:13px" target="_blank" rel="noopener"
+                               href="{{ url('/file/license/' . $list->el_file) }}">View file</a>
+                        </div>
+                    @endif
+                </div>
+        </div>
+    @empty
+        <div class="zn-empty">
+            <b>No licences or eligibilities added.</b>
+            Use the button below to add your first one.
+        </div>
+    @endforelse
+
+    <div class="zn-addbar" style="margin-top:14px">
+        <div>
+            <h3>Add another licence</h3>
+            <p>You can add as many as you need.</p>
+        </div>
+        <button type="button" class="zn-btn zn-btn-out zn-btn-sm" onclick="add_license()">
+            <i class="bi bi-plus-lg"></i> Add licence
+        </button>
+    </div>
+</div>
+
+{{-- Add / edit form. Hidden until the applicant chooses to add or edit, so
+     the page opens on what they have already saved. --}}
+<div id="form-license-wrap" class="zn-card d-none">
+    <div class="zn-section"><h5 id="form-license-heading">Add licence</h5></div>
+
+    <form id="form-license" method="POST" action="{{ route('license.store') }}" enctype="multipart/form-data">
+        @csrf
+        <input type="hidden" name="license-id" id="license-id">
+            <input type="hidden" name="license-attachment-current" id="license-attachment-current">
+
+        <div class="zn-grid">
+            <div class="zn-fld zn-col-6">
+                <label for="license-type">Licence type <span class="zn-req">*</span></label>
+                <input type="text" name="license-type" id="license-type">
+            </div>
+            <div class="zn-fld zn-col-6">
+                <label for="license-profession">Profession <span class="zn-req">*</span></label>
+                <input type="text" name="license-profession" id="license-profession">
+            </div>
+            <div class="zn-fld zn-col-4">
+                <label for="license-registration-date">Registration date <span class="zn-req">*</span></label>
+                <input type="date" name="license-registration-date" id="license-registration-date">
+            </div>
+            <div class="zn-fld zn-col-4">
+                <label for="license-valid-until">Valid until <span class="zn-opt">optional</span></label>
+                <input type="date" name="license-valid-until" id="license-valid-until" placeholder="Blank if it does not expire">
+            </div>
+            <div class="zn-fld zn-col-4">
+                <label for="license-attachment">Attachment <span class="zn-opt">optional</span></label>
+                <input type="file" name="license-attachment" id="license-attachment" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+        </div>
+
+        <div class="zn-formnav">
+            <span class="zn-formnav-hint"><span class="zn-req">*</span> Required</span>
+            <div class="d-flex gap-2">
+                <button type="button" class="zn-btn zn-btn-out zn-btn-sm" id="btn-cancel-edit-license">Cancel</button>
+                <button type="submit" class="zn-btn zn-btn-sm">Save licence</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+    function show_license_form(heading) {
+        document.getElementById('form-license-heading').textContent = heading;
+        document.getElementById('form-license-wrap').classList.remove('d-none');
+        document.getElementById('license-list').classList.add('d-none');
+        document.getElementById('form-license-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    #license-list {
-        min-width: 50vw;
-        width: fit-content;
-    }
-</style>
-
-<script type="text/javascript">
-    $(function(){
-        $('#btn-cancel-edit-license').click(function(){
-            $('#form-license input, #form-license select').val('');
-            $('#form-license').toggleClass('d-none');
-            $('#license-list').toggleClass('d-none');
+    function add_license() {
+        document.querySelectorAll('#form-license input, #form-license select').forEach(function (el) {
+            if (el.type !== 'hidden' || el.id === 'license-id') el.value = '';
         });
-    });
+        show_license_form('Add licence');
+    }
 
     function edit_license(e) {
-        $('#license-id').val($(e).data('licenseid'));
-        $('#license-type').val($(e).data('type'));
-        $('#license-registration-date').val($(e).data('registerdate'));
-        $('#license-valid-until').val($(e).data('validuntil'));
-        $('#license-profession').val($(e).data('profession'));
-        $('#license-attachment-current').val($(e).data('attachment'));
-
-        $('#form-license').toggleClass('d-none');
-        $('#license-list').toggleClass('d-none');
+        document.getElementById('license-id') && (document.getElementById('license-id').value = e.dataset.licenseid || '');
+        document.getElementById('type') && (document.getElementById('type').value = e.dataset.type || '');
+        document.getElementById('profession') && (document.getElementById('profession').value = e.dataset.profession || '');
+        document.getElementById('registerdate') && (document.getElementById('registerdate').value = e.dataset.registerdate || '');
+        document.getElementById('validuntil') && (document.getElementById('validuntil').value = e.dataset.validuntil || '');
+        document.getElementById('attachment') && (document.getElementById('attachment').value = e.dataset.attachment || '');
+        show_license_form('Edit licence');
     }
 
     async function remove_license(e) {
-        if (confirm('Are you sure you want to delete this post?')) {
-            try {
-                const url = @json(route('license.delete', ['id' => ':id'])).replace(':id', $(e).data('licenseid'));
-                const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    },
-                });
+        if (!confirm('Remove this licence? This cannot be undone.')) return;
 
-                const data = await response.json();
+        try {
+            const url = @json(route('license.delete', ['id' => ':id'])).replace(':id', e.dataset.licenseid);
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+            });
+            const data = await response.json();
 
-                if (data.success) {
-                    $(e).closest('tr').remove();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to remove record.');
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Could not remove that entry: ' + (data.error || 'unknown error'));
             }
+        } catch (error) {
+            console.error(error);
+            alert('Could not remove that entry. Please try again.');
         }
     }
+
+    document.getElementById('btn-cancel-edit-license').addEventListener('click', function () {
+        document.getElementById('form-license-wrap').classList.add('d-none');
+        document.getElementById('license-list').classList.remove('d-none');
+    });
 </script>
-
-<div id="license-list">
-    @if(session('success'))
-        <div style="color: green;">
-            {{ session('success') }}
-        </div>
-    @endif
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <table class="table table-sm table-striped table-hover" id="license-list-table">
-        <thead>
-            <tr>
-                <th>License Type</th>
-                <th>Registration Date</th>
-                <th>Valid Until</th>
-                <th>Profession</th>
-                <th>Attachment</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($license as $list)
-            <tr>
-                <td class="text-nowrap">{{ $list->el_type }}</td>
-                <td class="text-nowrap">{{ $list->el_regdate }}</td>
-                <td class="text-nowrap">{{ $list->el_expdate }}</td>
-                <td class="text-nowrap">{{ $list->el_profession }}</td>
-                <td>
-                    @if($list->el_file)
-                        <embed src="{{ '/file/get/license/'.$list->el_file }}" style="max-width: 100%; height: 150px;">
-                    @endif
-                </td>
-                <td>
-                    <div class="d-flex">
-                        <button type="button" class="btn btn-outline-secondary btn-sm m-1"
-                        data-licenseid="{{ $list->el_id }}"
-                        data-type="{{ $list->el_type }}"
-                        data-registerdate="{{ $list->el_regdate }}"
-                        data-validuntil="{{ $list->el_expdate }}"
-                        data-profession="{{ $list->el_profession }}"
-                        data-attachment="{{ $list->el_file }}"
-                        onclick="edit_license(this)">Edit</button>
-                        <button type="button" class="btn btn-outline-danger btn-sm m-1" data-licenseid="{{ $list->el_id }}" onclick="remove_license(this)">Remove</button>
-                    </div>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-    <button class="btn btn-outline-secondary btn-sm" onclick="edit_license(this)">Add</button>
-</div>
-
-<form id="form-license" enctype="multipart/form-data" name="form-license" method="post" action="{{ route('license.store') }}" class="mb-3 d-none">
-    @csrf
-    <input type="hidden" name="license-id" id="license-id" value="">
-    <div class="row g-3">
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="text" class="form-control-plaintext border-bottom" name="license-type" id="license-type">
-                <label for="license-type">License Type</label>
-            </div>
-        </div>
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="date" class="form-control-plaintext border-bottom" name="license-registration-date" id="license-registration-date">
-                <label for="license-registration-date">Registration Date</label>
-            </div>
-        </div>
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="date" class="form-control-plaintext border-bottom" name="license-valid-until" id="license-valid-until">
-                <label for="license-valid-until">Valid Until</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-3">
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="text" class="form-control-plaintext border-bottom" name="license-profession" id="license-profession">
-                <label for="license-profession">Profession</label>
-            </div>
-        </div>
-        
-        <div class="col-lg-auto">
-            <div class="form-floating mb-3">
-                <input type="file" class="form-control-plaintext border-bottom" name="license-attachment" id="license-attachment">
-                <input type="hidden" name="license-attachment-current" id="license-attachment-current">
-                <label for="license-attachment">Attachment</label>
-            </div>
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-primary btn-sm">Save</button>
-    <button type="button" class="btn btn-danger btn-sm" id="btn-cancel-edit-license">Cancel</button>
-</form>
-
-@stop
+@endpush

@@ -1,4 +1,4 @@
-@extends('layouts.layout')
+@extends('layouts.assessment')
 
 @section('content')
 
@@ -73,7 +73,7 @@
         @foreach ($answerList as $s => $set)
             <h5 class="text-muted">#{{ $s }}</h5>
             @foreach ($set as $i => $item)
-            <div class="form-check">
+            <div class="form-check zn-option">
                 <input class="form-check-input enneagram-ans" type="checkbox" data-set="{{ $s }}" value="{{ $i }}" id="set-{{ $s.'-'.$i }}" {{ in_array($i, ($answer?->enneagram_ans[$s] ?? [])) ? 'checked' : '' }}>
                 <label class="form-check-label" for="set-{{ $s.'-'.$i }}">{{ "($i) $item" }}</label>
             </div>
@@ -87,7 +87,7 @@
     @if (!$answer)
         <br>
         <div class="d-flex justify-content-center gap-5">
-            <button class="btn btn-primary" type="submit">Submit</button>
+            <button class="zn-btn" type="submit">Submit</button>
         </div>
     @endif
 </form>
