@@ -2,20 +2,78 @@
 
 @section('title', 'Create your applicant profile')
 
+@php
+    /*
+        One form, presented a step at a time.
+
+        The fields, their names, and the single POST to register.store are
+        unchanged — stepping is presentation only. Every step stays in the DOM
+        (hidden, not detached), so the browser submits the whole form exactly
+        as it did when this was one long page.
+
+        `fields` is used to bounce the applicant to the first step that has a
+        validation error, rather than dropping them on step 1 with a list of
+        problems they cannot see.
+    */
+    $steps = [
+        ['key' => 'name',    'label' => 'Name',      'title' => 'Your name',
+         'fields' => ['personal-firstname', 'personal-middlename', 'personal-lastname', 'personal-suffix']],
+
+        ['key' => 'contact', 'label' => 'Contact',   'title' => 'How we reach you',
+         'fields' => ['personal-email', 'personal-contact', 'personal-telephone']],
+
+        ['key' => 'address', 'label' => 'Address',   'title' => 'Where you live',
+         'fields' => ['personal-padd-province', 'personal-padd-city', 'personal-padd-barangay', 'personal-padd-specific',
+                      'personal-cadd-province', 'personal-cadd-city', 'personal-cadd-barangay', 'personal-cadd-specific']],
+
+        ['key' => 'about',   'label' => 'About you', 'title' => 'About you',
+         'fields' => ['personal-birthdate', 'personal-civil-status', 'personal-sex', 'personal-nationality',
+                      'personal-badd-province', 'personal-badd-city', 'personal-badd-barangay', 'personal-badd-specific']],
+
+        ['key' => 'extra',   'label' => 'Optional',  'title' => 'A few optional details',
+         'fields' => ['personal-bloodtype', 'personal-height', 'personal-weight', 'personal-religion', 'personal-dialect',
+                      'personal-sss', 'personal-hdmf', 'personal-phic', 'personal-tin']],
+
+        ['key' => 'finish',  'label' => 'Finish',    'title' => 'Set a password and confirm',
+         'fields' => ['app-code', 'privacy-acknowledged']],
+    ];
+
+    $total = count($steps);
+@endphp
+
 @section('body')
 <main class="zn-canvas">
     <div class="zn-narrow">
 
-        <div class="zn-formhead">
-            <div>
-                <p class="zn-page-title" style="margin-bottom:3px">Create your applicant profile</p>
-                <p class="zn-page-sub" style="margin-bottom:0">
-                    You only fill this in once — it carries over to every position you apply to.
-                </p>
+        {{-- The position is context, not a question. It comes from the posting
+             the applicant clicked through from and is shown here so they can
+             see what they are applying to — there is deliberately no field,
+             no input and no way to change it from this form. --}}
+        @if ($posting)
+            <div class="zn-applyfor">
+                <span class="zn-applyfor-ico"><i class="bi bi-briefcase-fill"></i></span>
+                <div>
+                    <b>You're applying for {{ $posting->posting_title }}</b>
+                    <span>
+                        Your application will be linked to this posting.
+                        <a class="zn-link" href="{{ route('careers.show', $posting->id) }}"
+                           target="_blank" rel="noopener">View posting</a>
+                    </span>
+                </div>
             </div>
-            <span class="zn-count">Already have a profile?
-                <a class="zn-link" href="{{ route('login') }}">Sign in</a></span>
-        </div>
+        @else
+            <div class="zn-applyfor muted">
+                <span class="zn-applyfor-ico"><i class="bi bi-person-plus-fill"></i></span>
+                <div>
+                    <b>You're creating a profile</b>
+                    <span>
+                        You haven't picked a position yet — that's fine. You can apply to any
+                        position once this is done.
+                        <a class="zn-link" href="{{ route('careers.index') }}">Browse open positions</a>
+                    </span>
+                </div>
+            </div>
+        @endif
 
         @if (session('success'))
             <div class="zn-toast"><i class="bi bi-check-circle-fill"></i> {{ session('success') }}</div>
@@ -29,362 +87,351 @@
             </div>
         @endif
 
+        {{-- ============ Step chrome ============ --}}
+        <div class="zn-formtop" id="wizard-top">
+            <div class="zn-formtop-head">
+                <div>
+                    <p class="zn-crumb">Step <span id="step-now">1</span> of {{ $total }}</p>
+                    <p class="zn-page-title" style="margin-bottom:3px" id="step-title">{{ $steps[0]['title'] }}</p>
+                    <p class="zn-page-sub" style="margin-bottom:0">
+                        A few short steps. You can go back and change anything before you finish.
+                    </p>
+                </div>
+            </div>
+
+            <div class="zn-stepper" role="tablist" aria-label="Sign-up steps">
+                @foreach ($steps as $i => $step)
+                    <button type="button" class="zn-stepper-item {{ $i === 0 ? 'active' : '' }}"
+                            data-goto="{{ $i }}" role="tab"
+                            aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
+                        <span class="zn-stepper-mark">{{ $i + 1 }}</span>
+                        <span class="zn-stepper-label">{{ $step['label'] }}</span>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="zn-bar zn-wizard-bar"><i id="step-bar" style="width: {{ round(100 / $total) }}%"></i></div>
+
         <form id="form-personal" action="{{ route('register.store') }}" method="POST" novalidate>
             @csrf
-            {{-- Set by the password modal after the privacy notice is acknowledged. --}}
-            <input type="password" name="app-code" id="app-code" class="d-none" autocomplete="new-password">
-            <input type="hidden" name="privacy-acknowledged" id="privacy-acknowledged" value="{{ old('privacy-acknowledged') }}">
 
-            <fieldset class="border-0 p-0 m-0">
+            {{-- ============ 1 · Name ============ --}}
+            <section class="zn-card zn-formcard zn-wstep" data-step="0">
+                <div class="zn-section"><h5>Your name</h5></div>
+                <p class="zn-help">Enter it as it appears on your government IDs.</p>
 
-                {{-- ============ Position and name ============ --}}
-                <section class="zn-card zn-formcard">
-                    <div class="zn-section"><h5>The position</h5></div>
-
-                    @if ($posting)
-                        {{-- Taken from the posting the applicant clicked through
-                             from. Not editable: the posting is the source of
-                             truth, and a typed value could disagree with the
-                             posting the application is actually attached to. --}}
-                        <div class="zn-locked-field">
-                            <div>
-                                <span class="zn-locked-label">Applying for</span>
-                                <b>{{ $posting->posting_title }}</b>
-                                <span class="zn-locked-meta">
-                                    This application will be linked to this posting.
-                                    <a class="zn-link" href="{{ route('careers.show', $posting->id) }}"
-                                       target="_blank" rel="noopener">View posting</a>
-                                </span>
-                            </div>
-                            <span class="zn-pill zn-pill-acc"><i class="bi bi-lock-fill"></i> From posting</span>
-                        </div>
-                        <input type="hidden" name="position-applied" value="{{ $posting->posting_title }}">
-                    @else
-                        {{-- No posting chosen — they came straight to /apply. We
-                             create the profile without a position rather than
-                             inviting free text that matches no posting. --}}
-                        <div class="zn-locked-field muted">
-                            <div>
-                                <span class="zn-locked-label">No position selected</span>
-                                <b>You're creating a profile only</b>
-                                <span class="zn-locked-meta">
-                                    That's fine — you can apply to any position after this.
-                                    <a class="zn-link" href="{{ route('careers.index') }}">Browse open positions</a>
-                                </span>
-                            </div>
-                            <span class="zn-pill zn-pill-opt">Optional</span>
-                        </div>
-                    @endif
-
-                    <div class="zn-section mt-4"><h5>Your name</h5></div>
-
-                    <div class="zn-grid">
-                        <div class="zn-fld zn-col-4">
-                            <label for="personal-firstname">First name <span class="zn-req">*</span></label>
-                            <input type="text" name="personal-firstname" id="personal-firstname"
-                                   value="{{ old('personal-firstname') }}">
-                        </div>
-                        <div class="zn-fld zn-col-4">
-                            <label for="personal-middlename">Middle name <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-middlename" id="personal-middlename"
-                                   value="{{ old('personal-middlename') }}">
-                        </div>
-                        <div class="zn-fld zn-col-4">
-                            <label for="personal-lastname">Last name <span class="zn-req">*</span></label>
-                            <input type="text" name="personal-lastname" id="personal-lastname"
-                                   value="{{ old('personal-lastname') }}">
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-suffix">Suffix <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-suffix" id="personal-suffix"
-                                   value="{{ old('personal-suffix') }}" placeholder="Jr., Sr., III">
-                        </div>
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-4">
+                        <label for="personal-firstname">First name <span class="zn-req">*</span></label>
+                        <input type="text" name="personal-firstname" id="personal-firstname"
+                               value="{{ old('personal-firstname') }}">
                     </div>
-                </section>
-
-                {{-- ============ Contact ============ --}}
-                <section class="zn-card zn-formcard">
-                    <div class="zn-section"><h5>How we reach you</h5></div>
-                    <p class="zn-help">We'll use these to tell you about your application.</p>
-
-                    <div class="zn-grid">
-                        <div class="zn-fld zn-col-5">
-                            <label for="personal-email">Email <span class="zn-req">*</span></label>
-                            <input type="email" name="personal-email" id="personal-email"
-                                   value="{{ old('personal-email') }}" placeholder="you@example.com">
-                        </div>
-                        <div class="zn-fld zn-col-4">
-                            <label for="personal-contact">Mobile number <span class="zn-req">*</span></label>
-                            <input type="text" name="personal-contact" id="personal-contact"
-                                   value="{{ old('personal-contact') }}" placeholder="09#########">
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-telephone">Telephone <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-telephone" id="personal-telephone"
-                                   value="{{ old('personal-telephone') }}">
-                        </div>
+                    <div class="zn-fld zn-col-4">
+                        <label for="personal-middlename">Middle name <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-middlename" id="personal-middlename"
+                               value="{{ old('personal-middlename') }}">
                     </div>
-                </section>
-
-                {{-- ============ Addresses ============ --}}
-                <section class="zn-card zn-formcard">
-                    <div class="zn-section"><h5>Permanent address</h5></div>
-
-                    <div class="zn-grid">
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-padd-province">Province <span class="zn-req">*</span></label>
-                            <select class="select-province" name="personal-padd-province" id="personal-padd-province">
-                                <option value="">Select province</option>
-                                @foreach ($provinceList as $list)
-                                    <option value="{{ $list->pr_name }}" @selected(old('personal-padd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-padd-city">City / Municipality <span class="zn-req">*</span></label>
-                            <select class="select-city" name="personal-padd-city" id="personal-padd-city">
-                                <option value="">Select city</option>
-                                @foreach ($municipalityList as $list)
-                                    <option style="display:none" province="{{ $list->ct_province_name }}"
-                                            value="{{ $list->ct_name }}" @selected(old('personal-padd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-padd-barangay">Barangay <span class="zn-req">*</span></label>
-                            <select class="select-barangay" name="personal-padd-barangay" id="personal-padd-barangay">
-                                <option value="">Select barangay</option>
-                                @foreach ($barangayList as $list)
-                                    <option style="display:none" city="{{ $list->br_city_name }}"
-                                            value="{{ $list->br_name }}" @selected(old('personal-padd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-padd-specific">Street / House no. <span class="zn-req">*</span></label>
-                            <input type="text" name="personal-padd-specific" id="personal-padd-specific"
-                                   value="{{ old('personal-padd-specific') }}">
-                        </div>
+                    <div class="zn-fld zn-col-4">
+                        <label for="personal-lastname">Last name <span class="zn-req">*</span></label>
+                        <input type="text" name="personal-lastname" id="personal-lastname"
+                               value="{{ old('personal-lastname') }}">
                     </div>
-                </section>
-
-                <section class="zn-card zn-formcard">
-                    <div class="zn-formcard-head">
-                        <div class="zn-section mb-0"><h5>Current address</h5></div>
-                        {{-- Most applicants live where they're registered. One tick
-                             beats retyping four fields. --}}
-                        <label class="zn-check">
-                            <input type="checkbox" id="same-as-permanent">
-                            <span>Same as permanent address</span>
-                        </label>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-suffix">Suffix <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-suffix" id="personal-suffix"
+                               value="{{ old('personal-suffix') }}" placeholder="Jr., Sr., III">
                     </div>
+                </div>
+            </section>
 
-                    <div class="zn-grid" id="current-address-fields">
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-cadd-province">Province <span class="zn-req">*</span></label>
-                            <select class="select-province" name="personal-cadd-province" id="personal-cadd-province">
-                                <option value="">Select province</option>
-                                @foreach ($provinceList as $list)
-                                    <option value="{{ $list->pr_name }}" @selected(old('personal-cadd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-cadd-city">City / Municipality <span class="zn-req">*</span></label>
-                            <select class="select-city" name="personal-cadd-city" id="personal-cadd-city">
-                                <option value="">Select city</option>
-                                @foreach ($municipalityList as $list)
-                                    <option style="display:none" province="{{ $list->ct_province_name }}"
-                                            value="{{ $list->ct_name }}" @selected(old('personal-cadd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-cadd-barangay">Barangay <span class="zn-req">*</span></label>
-                            <select class="select-barangay" name="personal-cadd-barangay" id="personal-cadd-barangay">
-                                <option value="">Select barangay</option>
-                                @foreach ($barangayList as $list)
-                                    <option style="display:none" city="{{ $list->br_city_name }}"
-                                            value="{{ $list->br_name }}" @selected(old('personal-cadd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-cadd-specific">Street / House no. <span class="zn-req">*</span></label>
-                            <input type="text" name="personal-cadd-specific" id="personal-cadd-specific"
-                                   value="{{ old('personal-cadd-specific') }}">
-                        </div>
-                    </div>
-                </section>
-
-                <section class="zn-card zn-formcard">
-                    <div class="zn-section"><h5>Place of birth</h5></div>
-
-                    <div class="zn-grid">
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-badd-province">Province <span class="zn-opt">optional</span></label>
-                            <select class="select-province" name="personal-badd-province" id="personal-badd-province">
-                                <option value="">Select province</option>
-                                @foreach ($provinceList as $list)
-                                    <option value="{{ $list->pr_name }}" @selected(old('personal-badd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-badd-city">City / Municipality <span class="zn-opt">optional</span></label>
-                            <select class="select-city" name="personal-badd-city" id="personal-badd-city">
-                                <option value="">Select city</option>
-                                @foreach ($municipalityList as $list)
-                                    <option style="display:none" province="{{ $list->ct_province_name }}"
-                                            value="{{ $list->ct_name }}" @selected(old('personal-badd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-badd-barangay">Barangay <span class="zn-opt">optional</span></label>
-                            <select class="select-barangay" name="personal-badd-barangay" id="personal-badd-barangay">
-                                <option value="">Select barangay</option>
-                                @foreach ($barangayList as $list)
-                                    <option style="display:none" city="{{ $list->br_city_name }}"
-                                            value="{{ $list->br_name }}" @selected(old('personal-badd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-badd-specific">Street / House no. <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-badd-specific" id="personal-badd-specific"
-                                   value="{{ old('personal-badd-specific') }}">
-                        </div>
-                    </div>
-                </section>
-
-                {{-- ============ Basic info ============ --}}
-                <section class="zn-card zn-formcard">
-                    <div class="zn-section"><h5>About you</h5></div>
-
-                    <div class="zn-grid">
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-birthdate">Birth date <span class="zn-req">*</span></label>
-                            <input type="date" name="personal-birthdate" id="personal-birthdate"
-                                   value="{{ old('personal-birthdate') }}">
-                        </div>
-                        <div class="zn-fld zn-col-2">
-                            <label for="personal-age">Age</label>
-                            {{-- Read-only: derived from birth date, not asked for. --}}
-                            <input type="text" id="personal-age" readonly tabindex="-1" placeholder="—">
-                        </div>
-                        <div class="zn-fld zn-col-4">
-                            <label for="personal-civil-status">Civil status <span class="zn-req">*</span></label>
-                            <select name="personal-civil-status" id="personal-civil-status">
-                                <option value="">Select</option>
-                                @foreach (['Single', 'Married', 'Separated/Divorced', 'Widow/Widower'] as $option)
-                                    <option value="{{ $option }}" @selected(old('personal-civil-status') === $option)>{{ $option }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-sex">Sex <span class="zn-req">*</span></label>
-                            <select name="personal-sex" id="personal-sex">
-                                <option value="">Select</option>
-                                @foreach (['Male', 'Female'] as $option)
-                                    <option value="{{ $option }}" @selected(old('personal-sex') === $option)>{{ $option }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-nationality">Nationality <span class="zn-req">*</span></label>
-                            <input type="text" name="personal-nationality" id="personal-nationality"
-                                   value="{{ old('personal-nationality') }}" placeholder="Filipino">
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-bloodtype">Blood type <span class="zn-opt">optional</span></label>
-                            <select name="personal-bloodtype" id="personal-bloodtype">
-                                <option value="">Select</option>
-                                @foreach (['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as $option)
-                                    <option value="{{ $option }}" @selected(old('personal-bloodtype') === $option)>{{ $option }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-height">Height (cm) <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-height" id="personal-height"
-                                   value="{{ old('personal-height') }}">
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-weight">Weight (kg) <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-weight" id="personal-weight"
-                                   value="{{ old('personal-weight') }}">
-                        </div>
-
-                        <div class="zn-fld zn-col-6">
-                            <label for="personal-religion">Religion <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-religion" id="personal-religion"
-                                   value="{{ old('personal-religion') }}">
-                        </div>
-                        <div class="zn-fld zn-col-6">
-                            <label for="personal-dialect">Dialect <span class="zn-opt">optional</span></label>
-                            <input type="text" name="personal-dialect" id="personal-dialect"
-                                   value="{{ old('personal-dialect') }}">
-                        </div>
-                    </div>
-                </section>
-
-                {{-- ============ Government IDs ============ --}}
-                <section class="zn-card zn-formcard">
-                    <div class="zn-section"><h5>Government ID numbers</h5></div>
-                    <p class="zn-help">
-                        All optional. If you're applying for your first job you may not have these yet —
-                        leave them blank and you can add them later.
-                    </p>
-
-                    <div class="zn-grid">
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-sss">SSS number</label>
-                            <input type="text" name="personal-sss" id="personal-sss" value="{{ old('personal-sss') }}">
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-hdmf">Pag-IBIG number</label>
-                            <input type="text" name="personal-hdmf" id="personal-hdmf" value="{{ old('personal-hdmf') }}">
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-phic">PhilHealth number</label>
-                            <input type="text" name="personal-phic" id="personal-phic" value="{{ old('personal-phic') }}">
-                        </div>
-                        <div class="zn-fld zn-col-3">
-                            <label for="personal-tin">TIN</label>
-                            <input type="text" name="personal-tin" id="personal-tin" value="{{ old('personal-tin') }}">
-                        </div>
-                    </div>
-                </section>
-
-            </fieldset>
-
-            <div class="zn-submitbar">
-                <span class="zn-formnav-hint">
-                    <span class="zn-req">*</span> Required. You can change any of this later from your profile.
-                </span>
-                <button type="button" class="zn-btn" id="btn-show-privacy">Create my profile</button>
-            </div>
-        </form>
-
-    </div>
-</main>
-
-{{-- ============ Privacy notice, shown before anything is created ============ --}}
-<div class="modal fade" id="privacyModal" data-bs-backdrop="static" data-bs-keyboard="false"
-     tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
-        <div class="modal-content zn-modal">
-            <div class="modal-header">
-                <h1 class="modal-title" id="privacyModalLabel">Before you continue</h1>
-            </div>
-            <div class="modal-body">
-                <p class="zn-modal-lede">
-                    We're about to collect personal information from you. Here's what happens to it —
-                    in plain terms.
+            {{-- ============ 2 · Contact ============ --}}
+            <section class="zn-card zn-formcard zn-wstep" data-step="1" hidden>
+                <div class="zn-section"><h5>How we reach you</h5></div>
+                <p class="zn-help">
+                    We'll use these to tell you about your application — and you'll sign in with
+                    your email or mobile number.
                 </p>
 
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-5">
+                        <label for="personal-email">Email <span class="zn-req">*</span></label>
+                        <input type="email" name="personal-email" id="personal-email"
+                               value="{{ old('personal-email') }}" placeholder="you@example.com"
+                               autocomplete="email">
+                    </div>
+                    <div class="zn-fld zn-col-4">
+                        <label for="personal-contact">Mobile number <span class="zn-req">*</span></label>
+                        <input type="text" name="personal-contact" id="personal-contact"
+                               value="{{ old('personal-contact') }}" placeholder="09#########"
+                               autocomplete="tel">
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-telephone">Telephone <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-telephone" id="personal-telephone"
+                               value="{{ old('personal-telephone') }}">
+                    </div>
+                </div>
+            </section>
+
+            {{-- ============ 3 · Address ============ --}}
+            <section class="zn-card zn-formcard zn-wstep" data-step="2" hidden>
+                <div class="zn-section"><h5>Permanent address</h5></div>
+
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-padd-province">Province <span class="zn-req">*</span></label>
+                        <select class="select-province" name="personal-padd-province" id="personal-padd-province">
+                            <option value="">Select province</option>
+                            @foreach ($provinceList as $list)
+                                <option value="{{ $list->pr_name }}" @selected(old('personal-padd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-padd-city">City / Municipality <span class="zn-req">*</span></label>
+                        <select class="select-city" name="personal-padd-city" id="personal-padd-city">
+                            <option value="">Select city</option>
+                            @foreach ($municipalityList as $list)
+                                <option style="display:none" province="{{ $list->ct_province_name }}"
+                                        value="{{ $list->ct_name }}" @selected(old('personal-padd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-padd-barangay">Barangay <span class="zn-req">*</span></label>
+                        <select class="select-barangay" name="personal-padd-barangay" id="personal-padd-barangay">
+                            <option value="">Select barangay</option>
+                            @foreach ($barangayList as $list)
+                                <option style="display:none" city="{{ $list->br_city_name }}"
+                                        value="{{ $list->br_name }}" @selected(old('personal-padd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-padd-specific">Street / House no. <span class="zn-req">*</span></label>
+                        <input type="text" name="personal-padd-specific" id="personal-padd-specific"
+                               value="{{ old('personal-padd-specific') }}">
+                    </div>
+                </div>
+
+                <div class="zn-formcard-head" style="margin-top:22px">
+                    <div class="zn-section mb-0"><h5>Current address</h5></div>
+                    {{-- Most applicants live where they're registered. One tick
+                         beats retyping four fields. --}}
+                    <label class="zn-check">
+                        <input type="checkbox" id="same-as-permanent">
+                        <span>Same as permanent address</span>
+                    </label>
+                </div>
+
+                <div class="zn-grid" id="current-address-fields">
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-cadd-province">Province <span class="zn-req">*</span></label>
+                        <select class="select-province" name="personal-cadd-province" id="personal-cadd-province">
+                            <option value="">Select province</option>
+                            @foreach ($provinceList as $list)
+                                <option value="{{ $list->pr_name }}" @selected(old('personal-cadd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-cadd-city">City / Municipality <span class="zn-req">*</span></label>
+                        <select class="select-city" name="personal-cadd-city" id="personal-cadd-city">
+                            <option value="">Select city</option>
+                            @foreach ($municipalityList as $list)
+                                <option style="display:none" province="{{ $list->ct_province_name }}"
+                                        value="{{ $list->ct_name }}" @selected(old('personal-cadd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-cadd-barangay">Barangay <span class="zn-req">*</span></label>
+                        <select class="select-barangay" name="personal-cadd-barangay" id="personal-cadd-barangay">
+                            <option value="">Select barangay</option>
+                            @foreach ($barangayList as $list)
+                                <option style="display:none" city="{{ $list->br_city_name }}"
+                                        value="{{ $list->br_name }}" @selected(old('personal-cadd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-cadd-specific">Street / House no. <span class="zn-req">*</span></label>
+                        <input type="text" name="personal-cadd-specific" id="personal-cadd-specific"
+                               value="{{ old('personal-cadd-specific') }}">
+                    </div>
+                </div>
+            </section>
+
+            {{-- ============ 4 · About you ============ --}}
+            <section class="zn-card zn-formcard zn-wstep" data-step="3" hidden>
+                <div class="zn-section"><h5>About you</h5></div>
+
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-birthdate">Birth date <span class="zn-req">*</span></label>
+                        <input type="date" name="personal-birthdate" id="personal-birthdate"
+                               value="{{ old('personal-birthdate') }}">
+                    </div>
+                    <div class="zn-fld zn-col-2">
+                        <label for="personal-age">Age</label>
+                        {{-- Read-only: derived from birth date, not asked for. --}}
+                        <input type="text" id="personal-age" readonly tabindex="-1" placeholder="—">
+                    </div>
+                    <div class="zn-fld zn-col-4">
+                        <label for="personal-civil-status">Civil status <span class="zn-req">*</span></label>
+                        <select name="personal-civil-status" id="personal-civil-status">
+                            <option value="">Select</option>
+                            @foreach (['Single', 'Married', 'Separated/Divorced', 'Widow/Widower'] as $option)
+                                <option value="{{ $option }}" @selected(old('personal-civil-status') === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-sex">Sex <span class="zn-req">*</span></label>
+                        <select name="personal-sex" id="personal-sex">
+                            <option value="">Select</option>
+                            @foreach (['Male', 'Female'] as $option)
+                                <option value="{{ $option }}" @selected(old('personal-sex') === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-4">
+                        <label for="personal-nationality">Nationality <span class="zn-req">*</span></label>
+                        <input type="text" name="personal-nationality" id="personal-nationality"
+                               value="{{ old('personal-nationality') }}" placeholder="Filipino">
+                    </div>
+                </div>
+
+                <div class="zn-section mt-4"><h5>Place of birth</h5></div>
+                <p class="zn-help">Optional — you can fill this in later from your profile.</p>
+
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-badd-province">Province <span class="zn-opt">optional</span></label>
+                        <select class="select-province" name="personal-badd-province" id="personal-badd-province">
+                            <option value="">Select province</option>
+                            @foreach ($provinceList as $list)
+                                <option value="{{ $list->pr_name }}" @selected(old('personal-badd-province') === $list->pr_name)>{{ $list->pr_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-badd-city">City / Municipality <span class="zn-opt">optional</span></label>
+                        <select class="select-city" name="personal-badd-city" id="personal-badd-city">
+                            <option value="">Select city</option>
+                            @foreach ($municipalityList as $list)
+                                <option style="display:none" province="{{ $list->ct_province_name }}"
+                                        value="{{ $list->ct_name }}" @selected(old('personal-badd-city') === $list->ct_name)>{{ $list->ct_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-badd-barangay">Barangay <span class="zn-opt">optional</span></label>
+                        <select class="select-barangay" name="personal-badd-barangay" id="personal-badd-barangay">
+                            <option value="">Select barangay</option>
+                            @foreach ($barangayList as $list)
+                                <option style="display:none" city="{{ $list->br_city_name }}"
+                                        value="{{ $list->br_name }}" @selected(old('personal-badd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-badd-specific">Street / House no. <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-badd-specific" id="personal-badd-specific"
+                               value="{{ old('personal-badd-specific') }}">
+                    </div>
+                </div>
+            </section>
+
+            {{-- ============ 5 · Optional details ============ --}}
+            <section class="zn-card zn-formcard zn-wstep" data-step="4" hidden>
+                <div class="zn-section"><h5>A few optional details</h5></div>
+                <p class="zn-help">
+                    Nothing on this step is required. Skip it and add anything you want later from
+                    your profile.
+                </p>
+
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-bloodtype">Blood type <span class="zn-opt">optional</span></label>
+                        <select name="personal-bloodtype" id="personal-bloodtype">
+                            <option value="">Select</option>
+                            @foreach (['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as $option)
+                                <option value="{{ $option }}" @selected(old('personal-bloodtype') === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-height">Height (cm) <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-height" id="personal-height"
+                               value="{{ old('personal-height') }}">
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-weight">Weight (kg) <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-weight" id="personal-weight"
+                               value="{{ old('personal-weight') }}">
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-religion">Religion <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-religion" id="personal-religion"
+                               value="{{ old('personal-religion') }}">
+                    </div>
+                    <div class="zn-fld zn-col-6">
+                        <label for="personal-dialect">Dialect <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-dialect" id="personal-dialect"
+                               value="{{ old('personal-dialect') }}">
+                    </div>
+                </div>
+
+                <div class="zn-section mt-4"><h5>Government ID numbers</h5></div>
+                <p class="zn-help">
+                    If you're applying for your first job you may not have these yet — leave them
+                    blank and add them later.
+                </p>
+
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-sss">SSS number <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-sss" id="personal-sss" value="{{ old('personal-sss') }}">
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-hdmf">Pag-IBIG number <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-hdmf" id="personal-hdmf" value="{{ old('personal-hdmf') }}">
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-phic">PhilHealth number <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-phic" id="personal-phic" value="{{ old('personal-phic') }}">
+                    </div>
+                    <div class="zn-fld zn-col-3">
+                        <label for="personal-tin">TIN <span class="zn-opt">optional</span></label>
+                        <input type="text" name="personal-tin" id="personal-tin" value="{{ old('personal-tin') }}">
+                    </div>
+                </div>
+            </section>
+
+            {{-- ============ 6 · Password, then the acknowledgement ============ --}}
+            <section class="zn-card zn-formcard zn-wstep" data-step="5" hidden>
+                <div class="zn-section"><h5>Set a password</h5></div>
+                <p class="zn-help">
+                    You'll use this with your email or mobile number to sign back in and follow your
+                    application.
+                </p>
+
+                <div class="zn-grid">
+                    <div class="zn-fld zn-col-6">
+                        <label for="app-code">Password <span class="zn-req">*</span></label>
+                        <input type="password" name="app-code" id="app-code" autocomplete="new-password">
+                        <p class="zn-fld-hint" id="pass-hint">At least 8 characters.</p>
+                    </div>
+                </div>
+
+                <div class="zn-section mt-4"><h5>Before you submit</h5></div>
+
+                {{-- The plain-language summary sits inline, on the same step as
+                     the checkbox, rather than in a modal. Acknowledging
+                     something you have to reopen a dialog to read is not an
+                     informed acknowledgement. --}}
                 <div class="zn-privacy-points">
                     <div class="zn-privacy-point">
                         <span class="zn-privacy-ico"><i class="bi bi-clipboard-check"></i></span>
@@ -407,69 +454,73 @@
                         <span class="zn-privacy-ico"><i class="bi bi-shield-check"></i></span>
                         <div>
                             <b>How it's handled</b>
-                            <span>We process it lawfully under the Data Privacy Act of 2012 (RA 10173) and
-                                apply measures intended to protect it against unauthorised access, loss
-                                or misuse.</span>
+                            <span>We process it under the Data Privacy Act of 2012 (RA 10173) and apply
+                                measures intended to protect it against unauthorised access, loss or
+                                misuse.</span>
                         </div>
                     </div>
                     <div class="zn-privacy-point">
                         <span class="zn-privacy-ico"><i class="bi bi-person-check"></i></span>
                         <div>
-                            <b>Your rights</b>
+                            <b>Your rights stay yours</b>
                             <span>You can access your information, correct it, object to how it's used,
-                                and complain to the National Privacy Commission. You can view and edit
-                                your profile any time after signing in.</span>
+                                withdraw consent where consent is the basis, and complain to the National
+                                Privacy Commission. Agreeing here waives none of that.</span>
                         </div>
                     </div>
                 </div>
 
                 <p class="zn-modal-foot">
-                    This is a summary. Please read the
-                    <a class="zn-link" href="{{ route('privacy') }}" target="_blank" rel="noopener">full Privacy Notice</a>
-                    for the complete details, including how to reach our Data Protection Officer.
+                    That's a summary. Please read the
+                    <a class="zn-link" href="{{ route('terms') }}" target="_blank" rel="noopener">Terms of Use</a>
+                    and the
+                    <a class="zn-link" href="{{ route('privacy') }}" target="_blank" rel="noopener">Data Privacy Notice</a>
+                    in full before you agree.
                 </p>
 
-                <label class="zn-check zn-check-lg">
-                    <input type="checkbox" id="privacy-agree">
-                    <span>I've read and understood how my information will be collected and processed,
-                        and I agree to continue.</span>
+                {{-- The acknowledgement itself.
+
+                     Scope is deliberately narrow: agreement to the Terms of Use,
+                     and informed acknowledgement/consent for recruitment
+                     processing under RA 10173. It is not a liability waiver and
+                     does not purport to surrender any statutory right.
+
+                     Not restored from old() on a validation bounce — a
+                     resubmission is a fresh submission and should carry a fresh
+                     affirmative act, not one inherited from the last attempt. --}}
+                <label class="zn-check zn-check-lg" for="privacy-acknowledged">
+                    <input type="checkbox" name="privacy-acknowledged" id="privacy-acknowledged" value="1">
+                    <span>
+                        I have read and understood the <b>Terms of Use</b> and the
+                        <b>Data Privacy Notice</b>, and I agree to the Terms of Use. I understand how
+                        my personal information will be collected, used, stored, accessed and
+                        processed for recruitment purposes, and I give my consent to that processing
+                        where consent is the applicable lawful basis.
+                    </span>
                 </label>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="zn-btn zn-btn-out zn-btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="zn-btn zn-btn-sm" id="btn-privacy-continue" disabled>Continue</button>
-            </div>
-        </div>
-    </div>
-</div>
+            </section>
 
-{{-- ============ Password, after the notice is acknowledged ============ --}}
-<div class="modal fade" id="setPassModal" data-bs-backdrop="static" data-bs-keyboard="false"
-     tabindex="-1" aria-labelledby="setPassModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content zn-modal">
-            <div class="modal-header">
-                <h1 class="modal-title" id="setPassModalLabel">Choose a password</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            {{-- ============ Movement ============ --}}
+            <div class="zn-formnav">
+                <button type="button" class="zn-btn zn-btn-out" id="btn-prev" hidden>
+                    <i class="bi bi-arrow-left"></i> Back
+                </button>
+                <span class="zn-formnav-hint" id="nav-hint">
+                    <span class="zn-req">*</span> Required. You can change any of this later from your profile.
+                </span>
+                <button type="button" class="zn-btn" id="btn-next">
+                    Continue <i class="bi bi-arrow-right"></i>
+                </button>
+                {{-- The final action. It exists only on the last step, directly
+                     below the acknowledgement. --}}
+                <button type="submit" class="zn-btn" id="btn-submit" hidden disabled>
+                    Create my profile
+                </button>
             </div>
-            <div class="modal-body">
-                <p class="zn-modal-lede">
-                    You'll use this with your email or mobile number to sign back in and follow your
-                    application.
-                </p>
-                <div class="zn-fld mb-0">
-                    <label for="input-set-pass">Password</label>
-                    <input type="password" id="input-set-pass" autocomplete="new-password">
-                    <p class="zn-fld-hint" id="pass-hint">At least 8 characters.</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="zn-btn zn-btn-out zn-btn-sm" data-bs-dismiss="modal">Back</button>
-                <button type="button" class="zn-btn zn-btn-sm" id="btn-set-pass">Create profile</button>
-            </div>
-        </div>
+        </form>
+
     </div>
-</div>
+</main>
 @endsection
 
 @push('scripts')
@@ -577,49 +628,87 @@ document.addEventListener('DOMContentLoaded', function () {
     birthdate.addEventListener('change', computeAge);
     computeAge();
 
-    /* ---- Privacy notice, then password ----
-       The notice is shown before any account is created, so acknowledgement
-       happens at the point of collection rather than after the fact. */
-    const privacyModal = new bootstrap.Modal(document.getElementById('privacyModal'));
-    const passModal = new bootstrap.Modal(document.getElementById('setPassModal'));
-    const agree = document.getElementById('privacy-agree');
-    const btnContinue = document.getElementById('btn-privacy-continue');
+    /* ---- Stepping ----------------------------------------------------------
+       Presentation only. Every step stays in the document, so the form still
+       submits as one POST with every field, exactly as before. */
+    const STEPS = @json(array_map(fn ($s) => ['title' => $s['title'], 'fields' => $s['fields']], $steps));
+    const LAST = STEPS.length - 1;
 
-    document.getElementById('btn-show-privacy').addEventListener('click', function () {
-        privacyModal.show();
-    });
+    const panels   = Array.from(document.querySelectorAll('.zn-wstep'));
+    const tabs     = Array.from(document.querySelectorAll('.zn-stepper-item[data-goto]'));
+    const btnPrev  = document.getElementById('btn-prev');
+    const btnNext  = document.getElementById('btn-next');
+    const btnSend  = document.getElementById('btn-submit');
+    const elNow    = document.getElementById('step-now');
+    const elTitle  = document.getElementById('step-title');
+    const elBar    = document.getElementById('step-bar');
+    const navHint  = document.getElementById('nav-hint');
+    const agree    = document.getElementById('privacy-acknowledged');
+    const top      = document.getElementById('wizard-top');
 
-    agree.addEventListener('change', function () {
-        btnContinue.disabled = !agree.checked;
-    });
+    let current = 0;
 
-    btnContinue.addEventListener('click', function () {
-        if (!agree.checked) return;
-        document.getElementById('privacy-acknowledged').value = '1';
-        privacyModal.hide();
-        passModal.show();
-    });
+    function show(index, scroll) {
+        current = Math.max(0, Math.min(LAST, index));
 
-    /* ---- Set password and submit ---- */
-    const inputPass = document.getElementById('input-set-pass');
-    const passHint = document.getElementById('pass-hint');
+        panels.forEach(function (panel, i) { panel.hidden = i !== current; });
 
-    document.getElementById('btn-set-pass').addEventListener('click', function () {
-        if (inputPass.value.length < 8) {
-            passHint.textContent = 'Please use at least 8 characters.';
-            passHint.style.color = 'var(--zn-warn)';
-            inputPass.focus();
-            return;
+        tabs.forEach(function (tab, i) {
+            tab.classList.toggle('active', i === current);
+            tab.classList.toggle('done', i < current);
+            tab.setAttribute('aria-selected', i === current ? 'true' : 'false');
+        });
+
+        elNow.textContent = current + 1;
+        elTitle.textContent = STEPS[current].title;
+        elBar.style.width = Math.round((current + 1) / STEPS.length * 100) + '%';
+
+        btnPrev.hidden = current === 0;
+        btnNext.hidden = current === LAST;
+        btnSend.hidden = current !== LAST;
+        navHint.hidden = current === LAST;
+
+        if (scroll !== false) {
+            top.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+    }
 
-        document.getElementById('app-code').value = inputPass.value;
-        document.getElementById('form-personal').submit();
+    btnNext.addEventListener('click', function () { show(current + 1); });
+    btnPrev.addEventListener('click', function () { show(current - 1); });
+
+    // The numbered steps double as navigation — nothing here is gated, so an
+    // applicant can jump back to fix one field without walking the whole form.
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () { show(Number(tab.dataset.goto)); });
     });
 
-    inputPass.addEventListener('input', function () {
-        passHint.textContent = 'At least 8 characters.';
-        passHint.style.color = '';
+    /* ---- The acknowledgement gates the final action ---- */
+    function syncAgree() { btnSend.disabled = !agree.checked; }
+    agree.addEventListener('change', syncAgree);
+    syncAgree();
+
+    // Belt and braces: even if the button's disabled state were bypassed, the
+    // form does not submit without the tick. The server rule is the real
+    // guard — this only avoids a pointless round trip.
+    document.getElementById('form-personal').addEventListener('submit', function (event) {
+        if (!agree.checked) {
+            event.preventDefault();
+            show(LAST);
+            agree.focus();
+        }
     });
+
+    /* ---- Land on the step that actually has the problem ---- */
+    const ERRORS = @json(array_keys($errors->getMessages()));
+
+    if (ERRORS.length) {
+        const firstBad = STEPS.findIndex(function (step) {
+            return step.fields.some(function (field) { return ERRORS.includes(field); });
+        });
+        show(firstBad === -1 ? 0 : firstBad, false);
+    } else {
+        show(0, false);
+    }
 });
 </script>
 @endpush

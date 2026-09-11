@@ -44,12 +44,13 @@ class UserController extends Controller
     {
         try {
 
-            $validator = Validator::make($request->all(), [
-                // Acknowledgement of the privacy notice is captured at the point
-                // of collection, as RA 10173 requires the data subject to be
-                // informed before their information is processed.
-                'privacy-acknowledged' => 'accepted',
-                'app-code' => 'required|string|max:255',
+            // This action serves two forms: registration (guest) and profile
+            // editing (signed in). The password and the acknowledgement belong
+            // to registration only — the profile form sends neither, so
+            // applying those rules to it would make every profile edit fail.
+            $isRegistration = !auth()->check();
+
+            $rules = [
                 'position-applied' => 'nullable|string|max:255',
                 'personal-firstname' => 'required|string|max:255',
                 'personal-middlename' => 'nullable|string|max:255', // Middlename can be optional
@@ -86,10 +87,26 @@ class UserController extends Controller
                 'personal-hdmf' => 'nullable|string|max:50', // HDMF (Pag-IBIG) number
                 'personal-phic' => 'nullable|string|max:50', // PHIC (PhilHealth) number
                 'personal-tin' => 'nullable|string|max:50', // TIN (Tax Identification Number)
-            ]);
+            ];
+
+            if ($isRegistration) {
+                // Acknowledgement of the Terms of Use and the Privacy Notice is
+                // captured at the point of collection, as RA 10173 requires the
+                // data subject to be informed before their information is
+                // processed. The checkbox sits immediately above the submit
+                // button; this rule is what actually enforces it.
+                $rules['privacy-acknowledged'] = 'accepted';
+                // min:8 matches the rule the form has always shown the
+                // applicant. It was previously only enforced in the browser.
+                $rules['app-code'] = 'required|string|min:8|max:255';
+            }
+
+            $validator = Validator::make($request->all(), $rules);
 
             $validator->setCustomMessages([
-                'privacy-acknowledged.accepted' => 'Please read and acknowledge the Privacy Notice before continuing.',
+                'privacy-acknowledged.accepted' => 'Please tick the box to confirm you have read and agree to the Terms of Use and the Data Privacy Notice.',
+                'app-code.required' => 'Please choose a password.',
+                'app-code.min' => 'Your password must be at least 8 characters.',
             ]);
 
             $validator->setAttributeNames([
@@ -175,11 +192,17 @@ class UserController extends Controller
                 // User::getAuthPassword() already points Laravel at it. Stored
                 // hashed; AuthController verifies with Hash::check().
                 $user->app_code = Hash::make($validated['app-code']);
-                // The job posting is the source of truth. Only fall back to a
-                // submitted value when the applicant is creating a profile
-                // without having chosen a position yet.
-                $user->app_posapplied = $intendedPosting->posting_title
-                    ?? ($validated['position-applied'] ?: null);
+                // The job posting is the sole source of truth for the position.
+                // The sign-up form neither asks for it nor submits it, so there
+                // is no applicant-supplied value to fall back to: creating a
+                // profile without choosing a posting leaves this empty until
+                // they apply to one.
+                //
+                // Empty string, not null — the column is NOT NULL, and this is
+                // the value the form's hidden field used to submit in the same
+                // situation. Changing the column is a schema decision, not part
+                // of this UX correction.
+                $user->app_posapplied = $intendedPosting->posting_title ?? '';
                 $user->app_date = now()->format('Y-m-d');
                 $user->app_lname = $validated['personal-lastname'];
                 $user->app_fname = $validated['personal-firstname'];

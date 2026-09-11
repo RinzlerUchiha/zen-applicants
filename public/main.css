@@ -1038,3 +1038,49 @@ fieldset:not(:disabled) .form-control-plaintext.border-bottom,
   cursor: default;
 }
 .zn-question:focus { outline: none; }
+
+/* ---------- 25. Sign-up wizard -------------------------------------------
+   The sign-up form is one form shown a step at a time. A long single column
+   of fields reads as an employee 201 form and puts people off before they
+   have typed anything; a short step reads as a question you can answer.
+
+   Stepping is presentation only — every step stays in the document, hidden,
+   so the browser still submits one complete form. */
+
+/* Author rules beat the UA sheet, so a class that sets `display` (.zn-btn is
+   inline-block) would keep an element with [hidden] visible. The wizard
+   toggles steps and buttons with el.hidden, so make the attribute win. */
+[hidden] { display: none !important; }
+
+/* The stepper is shared with the Application Form, where the items are links.
+   Here they are buttons, so the UA styling has to be undone. */
+.zn-stepper-item[data-goto] {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.zn-stepper-item[data-goto].done .zn-stepper-mark {
+  background: var(--zn-ok); border-color: var(--zn-ok); color: #fff;
+}
+
+.zn-wizard-bar { margin-bottom: 14px; }
+
+/* What the applicant is applying for: context, never a field. There is no
+   input behind this — the posting owns the value. */
+.zn-applyfor {
+  display: grid; grid-template-columns: 34px 1fr; gap: 13px; align-items: start;
+  background: var(--zn-accent-soft); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 14px 16px; margin-bottom: 14px;
+}
+.zn-applyfor.muted { background: var(--zn-surface-2); }
+.zn-applyfor-ico {
+  width: 34px; height: 34px; border-radius: var(--zn-radius); display: grid; place-items: center;
+  background: var(--zn-surface); color: var(--zn-accent); font-size: 14px;
+}
+.zn-applyfor b { display: block; font-size: 14.5px; font-weight: 700; color: var(--zn-ink); }
+.zn-applyfor span:not(.zn-applyfor-ico) {
+  display: block; font-size: 12.5px; color: var(--zn-ink-2); line-height: 1.55; margin-top: 2px;
+}
+
+/* Two doors rather than three, now that signing in lives only in the header. */
+.zn-doors.two { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 860px) { .zn-doors.two { grid-template-columns: 1fr; } }

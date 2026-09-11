@@ -32,9 +32,11 @@ use Illuminate\Support\Facades\Route;
 // taken straight to their own application, since they have already landed.
 Route::get('/', [JobListingController::class, 'landing'])->name('landing');
 
-// Public: the full notice must be reachable without an account, since it is
-// what a visitor reads before deciding to create one.
+// Public: both documents must be reachable without an account, since they are
+// what a visitor reads before deciding to create one — and the registration
+// acknowledgement links to each of them.
 Route::view('/privacy', 'pages.privacy')->name('privacy');
+Route::view('/terms', 'pages.terms')->name('terms');
 
 Route::get('/careers', [JobListingController::class, 'index'])->name('careers.index');
 Route::get('/careers/{id}', [JobListingController::class, 'show'])->name('careers.show');
