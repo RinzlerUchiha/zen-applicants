@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\DocumentRequest;
 use App\Models\User;
 use App\Services\ApplicantDocumentStatus;
+use App\Services\DocumentWithdrawal;
 use App\Services\FileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,36 @@ class DocumentController extends Controller
             'attention'  => $slots->filter(fn ($slot) => $slot['needs_action']),
             'maxSizeKb'  => config('documents.max_size_kb'),
             'extensions' => config('documents.extensions'),
+            // The run HR has started, when there is one: the deadline and how
+            // many attempts are left, shared across every document asked for.
+            'process'    => ApplicantDocumentStatus::process($appId),
         ]);
+    }
+
+    /**
+     * Withdraws from the document-completion process.
+     *
+     * The applicant's own decision to stop, independent of the deadline and the
+     * attempt counter. It ends the run; it does not delete anything.
+     */
+    public function withdraw(Request $request)
+    {
+        $validated = $request->validate([
+            'confirm' => 'accepted',
+            'note' => 'nullable|string|max:500',
+        ], [
+            'confirm.accepted' => 'Please confirm that you want to withdraw.',
+        ]);
+
+        $process = DocumentWithdrawal::withdraw(auth()->user()->app_id, $validated['note'] ?? null);
+
+        if (!$process) {
+            return redirect()->route('documents.index')
+                ->withErrors(['withdraw' => 'There is nothing to withdraw from.']);
+        }
+
+        return redirect()->route('documents.index')
+            ->with('success', 'You have withdrawn. We have kept your details on file.');
     }
 
     /**

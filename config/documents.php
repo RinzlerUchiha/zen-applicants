@@ -105,6 +105,48 @@ return [
     'max_size_kb' => 5120,
 
     /*
+    | The document-completion process (Milestone 3): one run at getting an
+    | applicant's outstanding documents in, with one deadline and one attempt
+    | counter shared by every request in it.
+    |
+    | These are defaults. HR sets the period and the attempt limit when starting
+    | a run, and the values chosen are copied onto that run — so changing a
+    | default here never moves a deadline an applicant has already been given.
+    */
+    'completion' => [
+
+        /* Calendar days. Weekends count; Philippine public holidays do not. */
+        'deadline_days' => 7,
+
+        /* Rejections allowed across the whole run, not per document. */
+        'max_attempts' => 3,
+
+        /* How a run can end, in the applicant's own words. The last four are
+           terminal and final. */
+        'statuses' => [
+            'active'               => 'Waiting for your documents',
+            'complete'             => 'Documents complete',
+            'non_responsive'       => 'No response before the deadline',
+            'requirements_not_met' => 'Document requirements not met',
+            'withdrawn'            => 'Withdrawn',
+        ],
+
+        /*
+        | What the outcome is written as in tblapp_applications.status. Kept
+        | apart from the applicant-facing wording above, and identical to the
+        | same map in zen-admin/config/applicant_documents.php: whichever app
+        | closes a run, the application ends up saying the same thing. Values
+        | are stored, so changing one orphans existing rows.
+        */
+        'application_status' => [
+            'complete'             => 'Documents Complete',
+            'non_responsive'       => 'Non-Responsive',
+            'requirements_not_met' => 'Document Requirements Not Met',
+            'withdrawn'            => 'Withdrawn',
+        ],
+    ],
+
+    /*
     | Where documents live. The disk is defined in config/filesystems.php —
     | local on a development machine, the company S3 bucket in production — and
     | is private either way. Keys are "{path}/{app_id}/{random}.{ext}" relative

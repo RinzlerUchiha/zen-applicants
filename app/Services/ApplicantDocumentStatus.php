@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Application;
 use App\Models\Document;
+use App\Models\DocumentProcess;
 use App\Models\DocumentRequest;
 use Illuminate\Support\Collection;
 
@@ -19,6 +20,19 @@ class ApplicantDocumentStatus
     public static function uploadableTypes(): array
     {
         return array_merge(config('documents.required'), config('documents.optional'));
+    }
+
+    /**
+     * The document-completion run the applicant is in, if any: the active one,
+     * otherwise the outcome they ended on. Read-only here — HR starts and ends
+     * it, and the only thing the applicant can do is withdraw.
+     */
+    public static function process(int $appId): ?DocumentProcess
+    {
+        return DocumentProcess::where('app_id', $appId)
+            ->orderByRaw("status = '" . DocumentProcess::ACTIVE . "' DESC")
+            ->latest('id')
+            ->first();
     }
 
     /**

@@ -74,6 +74,7 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
 
     Route::get('/profile/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/profile/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::post('/profile/documents/withdraw', [DocumentController::class, 'withdraw'])->name('documents.withdraw');
     // No delete: an applicant replaces a document by uploading a new one, which
     // sends it back to HR to check.
     Route::get('/profile/documents/{id}/view', [DocumentController::class, 'view'])->name('documents.view');

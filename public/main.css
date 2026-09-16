@@ -1155,3 +1155,21 @@ fieldset:not(:disabled) .form-control-plaintext.border-bottom,
   text-transform: none; color: var(--zn-ink-2);
 }
 .zn-fld .zn-check input, .zn-col-full > .zn-check input { width: auto; margin: 0; }
+
+/* ---------- 32. Document completion (HireFlow 2.5 · M3) -------------------
+   One deadline and one allowance for every document asked for. The date is
+   the point of the panel, so it leads; withdrawing sits beside it as a quiet
+   action, never a button competing with Upload. */
+
+.zn-deadline {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  background: var(--zn-accent-soft); border: 1px solid var(--zn-line);
+  border-radius: var(--zn-radius-lg); padding: 13px 15px; margin-bottom: 14px;
+}
+.zn-deadline-main { min-width: 0; flex: 1; }
+.zn-deadline-main b { display: block; font-size: 14px; font-weight: 700; color: var(--zn-ink); }
+.zn-deadline-main span { display: block; font-size: 12.5px; color: var(--zn-ink-2); margin-top: 2px; }
+.zn-deadline-out { font-size: 12px; flex: none; }
+@media (max-width: 560px) {
+  .zn-deadline { flex-direction: column; }
+}
