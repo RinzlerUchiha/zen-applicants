@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'My Application')
+@section('title', 'Home')
 
 @section('body')
 <main class="zn-canvas">
@@ -16,8 +16,7 @@
         @php
             $hour = (int) now()->format('H');
             $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
-            $docsDone = $docsSubmitted >= $docsRequired;
-            $allDone  = $completeness->isComplete() && $docsDone;
+            $docsDone = $docsSubmitted >= $docsRequired && $docsAttention->isEmpty();
         @endphp
 
         <p class="zn-page-title">{{ $greeting }}, {{ auth()->user()->app_fname ?: 'there' }}</p>
@@ -30,9 +29,33 @@
             @endif
         </p>
 
-        {{-- One action, chosen for them. Documents come before the form because
-             they are the shorter task and the one HR is actually waiting on. --}}
-        @if (!$docsDone)
+        {{-- One primary action, chosen for them. An HR request comes first — it
+             is the one thing someone is actively waiting on — then documents,
+             then the form. The checklist below is status, not a second copy of
+             this action. --}}
+        @if ($docsAttention->isNotEmpty())
+            @php $first = $docsAttention->first(); @endphp
+            <div class="zn-nextstep">
+                <div>
+                    <p class="zn-nextstep-label">HR needs something from you</p>
+                    <h3>
+                        {{ $first['document']?->review_status === 'rejected' ? 'Replace your' : 'Send your' }}
+                        {{ strtolower($first['label']) }}
+                        @if ($docsAttention->count() > 1)
+                            and {{ $docsAttention->count() - 1 }} more
+                        @endif
+                    </h3>
+                    <p>
+                        @if ($first['document']?->review_status === 'rejected')
+                            {{ $first['document']->review_reason_text }}
+                        @else
+                            HR has asked you to upload this document.
+                        @endif
+                    </p>
+                </div>
+                <a class="zn-btn" href="{{ route('documents.index') }}">Go to documents</a>
+            </div>
+        @elseif (!$docsDone)
             <div class="zn-nextstep">
                 <div>
                     <p class="zn-nextstep-label">Your next step</p>
@@ -65,7 +88,7 @@
                     <p>Nothing further is needed from you. HR reviews your application and will contact you to
                         schedule an initial interview.</p>
                 </div>
-                <a class="zn-btn zn-btn-out" href="{{ route('careers.index') }}">Browse more jobs</a>
+                <a class="zn-btn zn-btn-out" href="{{ route('careers.index') }}">View open positions</a>
             </div>
         @endif
 
@@ -85,36 +108,21 @@
                                 <span style="font-size:16px;font-weight:700">{{ $application->job_title }}</span>
                                 <span class="zn-count">{{ $application->mr_no }}</span>
                             </div>
-                            <div class="zn-count" style="font-weight:400">
-                                Applied {{ $application->applied_at?->format('F j, Y') }}
+                            {{-- A summary only. The stage tracker lives on My
+                                 Applications, and what to do next is the card
+                                 above — neither is repeated here. --}}
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <span class="zn-count" style="font-weight:400">
+                                    Applied {{ $application->applied_at?->format('F j, Y') }}
+                                </span>
+                                <span class="zn-pill zn-pill-acc">{{ $application->status }}</span>
                             </div>
-
-                            {{-- Stages reflect the real process: apply, forms and
-                                 materials, initial interview, then exams. --}}
-                            <div class="zn-track">
-                                <div class="zn-step done"><span>Applied</span></div>
-                                <div class="zn-step {{ $allDone ? 'done' : 'now' }}"><span>Forms &amp; materials</span></div>
-                                <div class="zn-step {{ $allDone ? 'now' : '' }}"><span>Initial interview</span></div>
-                                <div class="zn-step"><span>Assessments</span></div>
-                            </div>
-
-                            @if ($loop->first)
-                                <p class="zn-note">
-                                    @if ($allDone)
-                                        <strong>Everything is in.</strong> HR reviews your application and will
-                                        contact you to schedule an initial interview.
-                                    @else
-                                        <strong>Almost there.</strong> Once your documents and application form are
-                                        finished, HR reviews everything and contacts you about an interview.
-                                    @endif
-                                </p>
-                            @endif
                         </div>
                     @empty
                         <div class="zn-empty">
                             <b>No applications yet</b>
                             Browse our open positions and apply — your profile carries over to every one.
-                            <div class="mt-3"><a class="zn-btn zn-btn-sm" href="{{ route('careers.index') }}">See open positions</a></div>
+                            <div class="mt-3"><a class="zn-btn zn-btn-sm" href="{{ route('careers.index') }}">View open positions</a></div>
                         </div>
                     @endforelse
                 </div>
@@ -130,7 +138,9 @@
                             <div>
                                 <div class="zn-task-name">
                                     Documents
-                                    @if (!$docsDone)
+                                    @if ($docsAttention->isNotEmpty())
+                                        <span class="zn-pill zn-pill-req">HR request</span>
+                                    @elseif (!$docsDone)
                                         <span class="zn-pill zn-pill-req">{{ $docsRequired - $docsSubmitted }} left</span>
                                     @endif
                                 </div>
@@ -150,16 +160,17 @@
                             <div class="zn-task-pct">{{ $percent }}%</div>
                         </a>
 
-                        {{-- Locked, with no mechanism invented. HR provides these
-                             after the initial interview; until that workflow is
-                             designed, saying so is the honest state. --}}
-                        <a class="zn-task locked" href="{{ route('assessments.index') }}" style="pointer-events:auto">
-                            <div class="zn-task-ico"><i class="bi bi-lock-fill"></i></div>
+                        {{-- Not "Locked": nothing locks them yet (that gate is a
+                             later milestone), and the link opens. This says when
+                             they happen in the process; the Assessments page
+                             carries the full explanation. --}}
+                        <a class="zn-task" href="{{ route('assessments.index') }}">
+                            <div class="zn-task-ico"><i class="bi bi-ui-checks"></i></div>
                             <div>
-                                <div class="zn-task-name zn-muted">
-                                    Assessments <span class="zn-pill zn-pill-later">Locked</span>
+                                <div class="zn-task-name">
+                                    Assessments <span class="zn-pill zn-pill-later">After interview</span>
                                 </div>
-                                <div class="zn-task-sub">{{ config('application_form.assessments.gate_message') }}</div>
+                                <div class="zn-task-sub">Provided by HR after your initial interview</div>
                             </div>
                             <div class="zn-task-pct zn-muted">—</div>
                         </a>

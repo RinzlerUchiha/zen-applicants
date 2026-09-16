@@ -53,7 +53,7 @@
 <div id="form-skill-wrap" class="zn-card d-none">
     <div class="zn-section"><h5 id="form-skill-heading">Add skill</h5></div>
 
-    <form id="form-skill" method="POST" action="{{ route('skill.store') }}">
+    <form id="form-skill" data-unsaved-guard method="POST" action="{{ route('skill.store') }}">
         @csrf
         <input type="hidden" name="skill-id" id="skill-id">
 
@@ -112,9 +112,9 @@
 
     function edit_skill(e) {
         document.getElementById('skill-id') && (document.getElementById('skill-id').value = e.dataset.skillid || '');
-        document.getElementById('category') && (document.getElementById('category').value = e.dataset.category || '');
-        document.getElementById('type') && (document.getElementById('type').value = e.dataset.type || '');
-        document.getElementById('other') && (document.getElementById('other').value = e.dataset.other || '');
+        document.getElementById('skill-category') && (document.getElementById('skill-category').value = e.dataset.category || '');
+        document.getElementById('skill-type') && (document.getElementById('skill-type').value = e.dataset.type || '');
+        document.getElementById('skill-other') && (document.getElementById('skill-other').value = e.dataset.other || '');
         if (window.__filterSkillTypes) window.__filterSkillTypes();
         show_skill_form('Edit skill');
     }

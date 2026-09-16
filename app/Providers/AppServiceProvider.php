@@ -25,9 +25,9 @@ class AppServiceProvider extends ServiceProvider
         // The Application Form rail needs completeness on every page that
         // renders it. Computing it here keeps all 19 existing page views free
         // of the concern — none of them had to be edited for the redesign.
-        // Both layouts need it: layouts.layout renders the rail, and
-        // layouts.form-section reads it in its own scope to build the stepper.
-        View::composer(['layouts.layout', 'layouts.form-section'], function ($view) {
+        // Only the Application Form chrome reads it (progress and the stepper).
+        // layouts.layout no longer has a rail, so Documents does not pay for it.
+        View::composer(['layouts.form-section'], function ($view) {
             if (!Auth::check()) {
                 return;
             }

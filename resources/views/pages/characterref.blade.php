@@ -70,34 +70,34 @@
 <div id="form-characterref-wrap" class="zn-card d-none">
     <div class="zn-section"><h5 id="form-characterref-heading">Add reference</h5></div>
 
-    <form id="form-characterref" method="POST" action="{{ route('characterref.store') }}">
+    <form id="form-characterref" data-unsaved-guard method="POST" action="{{ route('characterref.store') }}">
         @csrf
         <input type="hidden" name="characterref-id" id="characterref-id">
 
         <div class="zn-grid">
             <div class="zn-fld zn-col-6">
                 <label for="characterref-name">Full name <span class="zn-req">*</span></label>
-                <input type="text" name="characterref-name" id="characterref-name">
+                <input type="text" name="characterref-name" id="characterref-name" required maxlength="20">
             </div>
             <div class="zn-fld zn-col-3">
                 <label for="characterref-contact">Contact number <span class="zn-req">*</span></label>
-                <input type="text" name="characterref-contact" id="characterref-contact">
+                <input type="text" name="characterref-contact" id="characterref-contact" required maxlength="11">
             </div>
             <div class="zn-fld zn-col-3">
                 <label for="characterref-relationship">Relationship <span class="zn-req">*</span></label>
-                <input type="text" name="characterref-relationship" id="characterref-relationship">
+                <input type="text" name="characterref-relationship" id="characterref-relationship" required maxlength="20">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="characterref-position">Position <span class="zn-opt">optional</span></label>
-                <input type="text" name="characterref-position" id="characterref-position">
+                <input type="text" name="characterref-position" id="characterref-position" maxlength="50">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="characterref-company">Company <span class="zn-opt">optional</span></label>
-                <input type="text" name="characterref-company" id="characterref-company">
+                <input type="text" name="characterref-company" id="characterref-company" maxlength="50">
             </div>
             <div class="zn-fld zn-col-4">
-                <label for="characterref-address">Address <span class="zn-opt">optional</span></label>
-                <input type="text" name="characterref-address" id="characterref-address">
+                <label for="characterref-address">Address <span class="zn-req">*</span></label>
+                <input type="text" name="characterref-address" id="characterref-address" required>
             </div>
         </div>
 
@@ -131,12 +131,12 @@
 
     function edit_characterref(e) {
         document.getElementById('characterref-id') && (document.getElementById('characterref-id').value = e.dataset.characterrefid || '');
-        document.getElementById('fullname') && (document.getElementById('fullname').value = e.dataset.fullname || '');
-        document.getElementById('company') && (document.getElementById('company').value = e.dataset.company || '');
-        document.getElementById('address') && (document.getElementById('address').value = e.dataset.address || '');
-        document.getElementById('position') && (document.getElementById('position').value = e.dataset.position || '');
-        document.getElementById('contact') && (document.getElementById('contact').value = e.dataset.contact || '');
-        document.getElementById('relationship') && (document.getElementById('relationship').value = e.dataset.relationship || '');
+        document.getElementById('characterref-name') && (document.getElementById('characterref-name').value = e.dataset.fullname || '');
+        document.getElementById('characterref-company') && (document.getElementById('characterref-company').value = e.dataset.company || '');
+        document.getElementById('characterref-address') && (document.getElementById('characterref-address').value = e.dataset.address || '');
+        document.getElementById('characterref-position') && (document.getElementById('characterref-position').value = e.dataset.position || '');
+        document.getElementById('characterref-contact') && (document.getElementById('characterref-contact').value = e.dataset.contact || '');
+        document.getElementById('characterref-relationship') && (document.getElementById('characterref-relationship').value = e.dataset.relationship || '');
         show_characterref_form('Edit reference');
     }
 

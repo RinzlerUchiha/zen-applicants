@@ -58,39 +58,41 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::get('/applications', [ApplicationController::class, 'index'])->name('applications.index');
 
     Route::get('/profile/personal', [UserController::class, 'show'])->name('personal.show');
-    Route::post('/profile/personal', [UserController::class, 'store'])->name('personal.store');
+    Route::post('/profile/personal', [UserController::class, 'store'])->name('personal.store')->middleware('continueAfterSave');
 
     Route::get('/profile/family', [FamilyController::class, 'index'])->name('family.index');
-    Route::post('/profile/family', [FamilyController::class, 'store'])->name('family.store');
+    Route::post('/profile/family', [FamilyController::class, 'store'])->name('family.store')->middleware('continueAfterSave');
     Route::delete('/profile/family/{id}', [FamilyController::class, 'delete'])->name('family.delete');
 
     Route::get('/profile/skill', [SkillController::class, 'index'])->name('skill.index');
-    Route::post('/profile/skill', [SkillController::class, 'store'])->name('skill.store');
+    Route::post('/profile/skill', [SkillController::class, 'store'])->name('skill.store')->middleware('continueAfterSave');
     Route::delete('/profile/skill/{id}', [SkillController::class, 'delete'])->name('skill.delete');
 
     Route::get('/profile/education', [EducationController::class, 'index'])->name('education.index');
-    Route::post('/profile/education', [EducationController::class, 'store'])->name('education.store');
+    Route::post('/profile/education', [EducationController::class, 'store'])->name('education.store')->middleware('continueAfterSave');
     Route::delete('/profile/education/{id}', [EducationController::class, 'delete'])->name('education.delete');
 
     Route::get('/profile/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/profile/documents', [DocumentController::class, 'store'])->name('documents.store');
+    // No delete: an applicant replaces a document by uploading a new one, which
+    // sends it back to HR to check.
     Route::get('/profile/documents/{id}/view', [DocumentController::class, 'view'])->name('documents.view');
-    Route::delete('/profile/documents/{id}', [DocumentController::class, 'delete'])->name('documents.delete');
 
     Route::get('/professional/license', [EligibilityController::class, 'index'])->name('license.index');
-    Route::post('/professional/license', [EligibilityController::class, 'store'])->name('license.store');
+    Route::post('/professional/license', [EligibilityController::class, 'store'])->name('license.store')->middleware('continueAfterSave');
     Route::delete('/professional/license/{id}', [EligibilityController::class, 'delete'])->name('license.delete');
 
     Route::get('/professional/certificate', [CertificateController::class, 'index'])->name('certificate.index');
-    Route::post('/professional/certificate', [CertificateController::class, 'store'])->name('certificate.store');
+    Route::post('/professional/certificate', [CertificateController::class, 'store'])->name('certificate.store')->middleware('continueAfterSave');
     Route::delete('/professional/certificate/{id}', [CertificateController::class, 'delete'])->name('certificate.delete');
 
     Route::get('/work/employment', [EmploymentRecController::class, 'index'])->name('employment.index');
-    Route::post('/work/employment', [EmploymentRecController::class, 'store'])->name('employment.store');
+    Route::post('/work/employment', [EmploymentRecController::class, 'store'])->name('employment.store')->middleware('continueAfterSave');
+    Route::post('/work/employment/first-job', [EmploymentRecController::class, 'setFirstJob'])->name('employment.first-job');
     Route::delete('/work/employment/{id}', [EmploymentRecController::class, 'delete'])->name('employment.delete');
 
     Route::get('/work/characterref', [CharacterRefController::class, 'index'])->name('characterref.index');
-    Route::post('/work/characterref', [CharacterRefController::class, 'store'])->name('characterref.store');
+    Route::post('/work/characterref', [CharacterRefController::class, 'store'])->name('characterref.store')->middleware('continueAfterSave');
     Route::delete('/work/characterref/{id}', [CharacterRefController::class, 'delete'])->name('characterref.delete');
 
     Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');

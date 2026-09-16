@@ -19,19 +19,22 @@ class FamilyController extends Controller
     {
         try {
 
+            // The family section may have no records, but a family member who is
+            // added must be complete. Limits match the column widths, so an
+            // over-long value is a clear message rather than a database error.
             $validator = Validator::make($request->all(), [
                 'family-id' => 'nullable|numeric',
-                'family-relationship' => 'required|string',
-                'family-firstname' => 'required|string',
-                'family-middlename' => 'nullable|string',
-                'family-lastname' => 'required|string',
-                'family-suffix' => 'nullable|string',
-                'family-maidenname' => 'nullable|string',
+                'family-relationship' => 'required|string|max:20',
+                'family-firstname' => 'required|string|max:20',
+                'family-middlename' => 'nullable|string|max:20',
+                'family-lastname' => 'required|string|max:20',
+                'family-suffix' => 'nullable|string|max:10',
+                'family-maidenname' => 'nullable|string|max:20',
                 'family-birthdate' => 'required|date|before:today',
-                'family-sex' => 'required|string',
-                'family-contact' => 'required|string',
+                'family-sex' => 'required|string|max:10',
+                'family-contact' => 'required|string|max:20',
                 'family-address' => 'required|string',
-                'family-occupation' => 'nullable|string',
+                'family-occupation' => 'nullable|string|max:20',
                 'family-workplace' => 'nullable|string'
             ]);
 
@@ -75,6 +78,10 @@ class FamilyController extends Controller
             $family->save();
 
             return redirect()->route('family.index')->with('success', 'Family info updated');
+        } catch (ValidationException $e) {
+            // Every field the record is missing, against the field itself — not
+            // the first one flattened into a single "failed to process" line.
+            throw $e;
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to process information: ' . $e->getMessage()]);
         }

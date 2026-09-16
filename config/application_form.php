@@ -89,12 +89,23 @@ return [
         ],
 
         /* ---------------------------------------------------------------- */
+        /*
+        | Family is optional to APPLY. Nobody is stopped from applying for not
+        | listing a relative, so an empty section is complete. A family member
+        | who is added must still be a complete record — that is enforced on
+        | save in FamilyController, not here.
+        |
+        | This is stage-specific: family information becomes mandatory at the
+        | probation stage, as part of the employee information requirements.
+        | That belongs to the probation stage's own rules, not to this file,
+        | which describes the application only.
+        */
         'family' => [
             'label'    => 'Family background',
             'route'    => 'family.index',
             'type'     => 'repeating',
-            'blocking' => true,
-            'min_rows' => 1,
+            'blocking' => false,
+            'min_rows' => 0,
             'fields' => [
                 'fam_relationship' => ['label' => 'Relationship', 'apply' => 'required', 'for201' => true],
                 'fam_lastname'     => ['label' => 'Last name',    'apply' => 'required', 'for201' => true],
@@ -117,6 +128,11 @@ return [
             | Married. Widowed and Separated are deliberately excluded — forcing
             | a spouse row there would compel an entry the applicant may have no
             | way to complete.
+            |
+            | Now that the section is optional, this applies to a family list
+            | that has been started: a married applicant who lists relatives is
+            | asked for the spouse among them. An applicant who lists nobody is
+            | not asked for anything.
             */
             'requires_spouse_when_civil_status_in' => ['married'],
         ],
@@ -269,7 +285,7 @@ return [
     */
     'assessments' => [
         'gated'        => true,
-        'gate_message' => 'HR will open these after your initial interview. Nothing is needed from you yet.',
+        'gate_message' => 'Nothing is needed from you yet. HR will tell you when to take them.',
         'list' => [
             ['label' => 'Enneagram',              'route' => 'enneagram.show',           'minutes' => 5],
             ['label' => 'TAPT',                   'route' => 'tapt.show',                'minutes' => 6],

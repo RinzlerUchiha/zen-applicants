@@ -72,7 +72,7 @@
 <div id="form-certificate-wrap" class="zn-card d-none">
     <div class="zn-section"><h5 id="form-certificate-heading">Add certificate</h5></div>
 
-    <form id="form-certificate" method="POST" action="{{ route('certificate.store') }}" enctype="multipart/form-data">
+    <form id="form-certificate" data-unsaved-guard method="POST" action="{{ route('certificate.store') }}" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="certificate-id" id="certificate-id">
             <input type="hidden" name="certificate-attachment-current" id="certificate-attachment-current">
@@ -80,19 +80,19 @@
         <div class="zn-grid">
             <div class="zn-fld zn-col-6">
                 <label for="certificate-title">Title <span class="zn-req">*</span></label>
-                <input type="text" name="certificate-title" id="certificate-title">
+                <input type="text" name="certificate-title" id="certificate-title" required maxlength="50">
             </div>
             <div class="zn-fld zn-col-3">
                 <label for="certificate-completion-date">Completion date <span class="zn-req">*</span></label>
-                <input type="date" name="certificate-completion-date" id="certificate-completion-date">
+                <input type="date" name="certificate-completion-date" id="certificate-completion-date" required>
             </div>
             <div class="zn-fld zn-col-3">
-                <label for="certificate-location">Location <span class="zn-opt">optional</span></label>
-                <input type="text" name="certificate-location" id="certificate-location">
+                <label for="certificate-location">Location <span class="zn-req">*</span></label>
+                <input type="text" name="certificate-location" id="certificate-location" required maxlength="100">
             </div>
             <div class="zn-fld zn-col-6">
                 <label for="certificate-speaker">Speaker <span class="zn-opt">optional</span></label>
-                <input type="text" name="certificate-speaker" id="certificate-speaker">
+                <input type="text" name="certificate-speaker" id="certificate-speaker" maxlength="100">
             </div>
             <div class="zn-fld zn-col-6">
                 <label for="certificate-attachment">Attachment <span class="zn-opt">optional</span></label>
@@ -130,11 +130,11 @@
 
     function edit_certificate(e) {
         document.getElementById('certificate-id') && (document.getElementById('certificate-id').value = e.dataset.certid || '');
-        document.getElementById('title') && (document.getElementById('title').value = e.dataset.title || '');
-        document.getElementById('location') && (document.getElementById('location').value = e.dataset.location || '');
-        document.getElementById('completiondate') && (document.getElementById('completiondate').value = e.dataset.completiondate || '');
-        document.getElementById('speaker') && (document.getElementById('speaker').value = e.dataset.speaker || '');
-        document.getElementById('attachment') && (document.getElementById('attachment').value = e.dataset.attachment || '');
+        document.getElementById('certificate-title') && (document.getElementById('certificate-title').value = e.dataset.title || '');
+        document.getElementById('certificate-location') && (document.getElementById('certificate-location').value = e.dataset.location || '');
+        document.getElementById('certificate-completion-date') && (document.getElementById('certificate-completion-date').value = e.dataset.completiondate || '');
+        document.getElementById('certificate-speaker') && (document.getElementById('certificate-speaker').value = e.dataset.speaker || '');
+        document.getElementById('certificate-attachment-current') && (document.getElementById('certificate-attachment-current').value = e.dataset.attachment || '');
         show_certificate_form('Edit certificate');
     }
 

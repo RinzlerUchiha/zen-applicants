@@ -21,12 +21,12 @@ class CharacterRefController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'characterref-id' => 'nullable|numeric',
-                'characterref-name' => 'required|string',
-                'characterref-position' => 'nullable|string',
-                'characterref-company' => 'nullable|string',
+                'characterref-name' => 'required|string|max:20',
+                'characterref-position' => 'nullable|string|max:50',
+                'characterref-company' => 'nullable|string|max:50',
                 'characterref-address' => 'required|string',
-                'characterref-contact' => 'required|string',
-                'characterref-relationship' => 'required|string'
+                'characterref-contact' => 'required|string|max:11',
+                'characterref-relationship' => 'required|string|max:20'
             ]);
 
             $validator->setAttributeNames([
@@ -57,6 +57,10 @@ class CharacterRefController extends Controller
             $characterRef->save();
 
             return redirect()->route('characterref.index')->with('success', 'characterref info updated');
+        } catch (ValidationException $e) {
+            // Every field the record is missing, against the field itself — not
+            // the first one flattened into a single "failed to process" line.
+            throw $e;
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to process information: ' . $e->getMessage()]);
         }

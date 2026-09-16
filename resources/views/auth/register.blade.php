@@ -69,7 +69,7 @@
                     <span>
                         You haven't picked a position yet — that's fine. You can apply to any
                         position once this is done.
-                        <a class="zn-link" href="{{ route('careers.index') }}">Browse open positions</a>
+                        <a class="zn-link" href="{{ route('careers.index') }}">View open positions</a>
                     </span>
                 </div>
             </div>

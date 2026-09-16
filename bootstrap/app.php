@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'checkUserStatus' => \App\Http\Middleware\CheckUserStatus::class,
+            'continueAfterSave' => \App\Http\Middleware\ContinueAfterSave::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

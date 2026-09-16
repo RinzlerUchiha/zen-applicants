@@ -22,10 +22,10 @@ class CertificateController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'certificate-id' => 'nullable|numeric',
-                'certificate-title' => 'required|string',
-                'certificate-location' => 'required|string',
+                'certificate-title' => 'required|string|max:50',
+                'certificate-location' => 'required|string|max:100',
                 'certificate-completion-date' => 'required|date|before_or_equal:today',
-                'certificate-speaker' => 'nullable|string',
+                'certificate-speaker' => 'nullable|string|max:100',
                 'certificate-attachment' => 'nullable|file',
                 'certificate-attachment-current' => 'nullable|string'
             ]);
@@ -69,6 +69,10 @@ class CertificateController extends Controller
             $certificate->save();
 
             return redirect()->route('certificate.index')->with('success', 'Certificate info updated');
+        } catch (ValidationException $e) {
+            // Every field the record is missing, against the field itself — not
+            // the first one flattened into a single "failed to process" line.
+            throw $e;
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to process information: ' . $e->getMessage()]);
         }

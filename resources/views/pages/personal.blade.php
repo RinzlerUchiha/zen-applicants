@@ -22,57 +22,79 @@
     ];
 @endphp
 
-<p class="zn-help" style="margin-top:0">
-    Your own details. This is the only section that is not a list — everything here is about you.
-</p>
+{{-- Edit sits at the top, where it is the first thing an applicant sees on
+     their own profile. It sticks while editing so Save is always reachable. --}}
+<div class="zn-page-toolbar" id="personal-toolbar">
+    <p class="zn-help">
+        Your own details. This is the only section that is not a list — everything here is about you.
+    </p>
+    <div class="zn-page-toolbar-actions">
+        <button type="button" class="zn-btn zn-btn-out zn-btn-sm" id="btn-cancel-personal" data-unsaved-discard hidden>Cancel</button>
+        <button type="button" class="zn-btn zn-btn-out zn-btn-sm" id="btn-edit-personal">
+            <i class="bi bi-pencil"></i> Edit details
+        </button>
+        <button type="submit" form="form-personal" class="zn-btn zn-btn-sm" id="btn-save-personal" hidden>Save changes</button>
+    </div>
+</div>
 
-<form id="form-personal" method="POST" action="{{ route('personal.store') }}">
+{{-- Who you are, and what you applied for. Deliberately outside the form: the
+     photo saves on its own, so changing it does not mean editing the profile.
+     The positions come from the applications themselves, and there can be
+     several of them. --}}
+<section class="zn-card zn-formcard">
+    <div class="zn-identity">
+        <div class="zn-identity-photo">
+            @if ($user?->app_img)
+                <img id="personal-img-preview" src="{{ url('/file/app-img/' . $user->app_img) }}" alt="">
+            @else
+                <span class="zn-identity-initials" id="personal-img-preview">
+                    {{ strtoupper(mb_substr($user?->app_fname ?? 'A', 0, 1) . mb_substr($user?->app_lname ?? '', 0, 1)) }}
+                </span>
+            @endif
+            <button type="button" class="zn-link zn-photo-btn" id="btn-change-photo">
+                {{ $user?->app_img ? 'Change photo' : 'Add photo' }}
+            </button>
+            <input type="file" id="personal-img-input" accept="image/*" class="d-none">
+            <p class="zn-photo-status" id="personal-img-status" hidden></p>
+        </div>
+
+        <div class="zn-identity-main">
+            <h2 class="zn-identity-name">
+                {{ trim(($user?->app_fname ?? '') . ' ' . ($user?->app_mname ?? '') . ' ' . ($user?->app_lname ?? '') . ' ' . ($user?->app_suffix ?? '')) ?: 'Your name' }}
+            </h2>
+
+            @if (($appliedPositions ?? collect())->isNotEmpty())
+                <div class="zn-identity-meta zn-applied-for">
+                    <span>Applied for</span>
+                    <ul class="zn-applied-list">
+                        @foreach ($appliedPositions as $application)
+                            <li title="Applied {{ $application['applied_at']?->format('F j, Y') }}">
+                                <b>{{ $application['title'] }}</b>
+                                <span class="zn-pill zn-pill-acc">{{ $application['status'] }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @elseif ($user?->app_posapplied)
+                <p class="zn-identity-meta">Applied for <b>{{ $user->app_posapplied }}</b></p>
+            @endif
+
+            @if ($user?->app_date)
+                <p class="zn-identity-meta">
+                    Profile created {{ \Carbon\Carbon::parse($user->app_date)->format('F j, Y') }}
+                </p>
+            @endif
+        </div>
+    </div>
+</section>
+
+<form id="form-personal" data-unsaved-guard method="POST" action="{{ route('personal.store') }}">
     @csrf
-    {{-- Editing your profile must never reassign the position you applied for;
-         that belongs to the job posting. Sent unchanged so the controller's
-         guard has something to compare. --}}
-    <input type="hidden" name="position-applied" value="{{ $appliedPosition ?? $user?->app_posapplied }}">
-
     <fieldset id="personal-fieldset" disabled class="border-0 p-0 m-0">
 
-        {{-- ---------- Identity header ---------- --}}
+        {{-- ---------- Your name ---------- --}}
         <section class="zn-card zn-formcard">
-            <div class="zn-identity">
-                <div class="zn-identity-photo">
-                    @if ($user?->app_img)
-                        <img id="personal-img-preview" src="{{ url('/file/app-img/' . $user->app_img) }}" alt="">
-                    @else
-                        <span class="zn-identity-initials" id="personal-img-preview">
-                            {{ strtoupper(mb_substr($user?->app_fname ?? 'A', 0, 1) . mb_substr($user?->app_lname ?? '', 0, 1)) }}
-                        </span>
-                    @endif
-                    <button type="button" class="zn-link zn-photo-btn" id="btn-change-photo">
-                        {{ $user?->app_img ? 'Change photo' : 'Add photo' }}
-                    </button>
-                    <input type="file" id="personal-img-input" accept="image/*" class="d-none">
-                </div>
-
-                <div class="zn-identity-main">
-                    <h2 class="zn-identity-name">
-                        {{ trim(($user?->app_fname ?? '') . ' ' . ($user?->app_mname ?? '') . ' ' . ($user?->app_lname ?? '') . ' ' . ($user?->app_suffix ?? '')) ?: 'Your name' }}
-                    </h2>
-
-                    @if ($appliedPosition ?? $user?->app_posapplied)
-                        <p class="zn-identity-meta">
-                            Applied for <b>{{ $appliedPosition ?? $user?->app_posapplied }}</b>
-                            <span class="zn-pill zn-pill-acc"><i class="bi bi-lock-fill"></i> From posting</span>
-                        </p>
-                    @endif
-
-                    @if ($user?->app_date)
-                        <p class="zn-identity-meta">
-                            Profile created {{ \Carbon\Carbon::parse($user->app_date)->format('F j, Y') }}
-                        </p>
-                    @endif
-                </div>
-            </div>
-
-            <div class="zn-section mt-4"><h5>Your name</h5></div>
+            <div class="zn-section"><h5>Your name</h5></div>
             <div class="zn-grid">
                 <div class="zn-fld zn-col-4">
                     <label for="personal-firstname">First name <span class="zn-req">*</span></label>
@@ -260,19 +282,6 @@
         </section>
 
     </fieldset>
-
-    <div class="zn-submitbar">
-        <span class="zn-formnav-hint">
-            <span class="zn-req">*</span> Required to complete your application.
-        </span>
-        <div class="d-flex gap-2">
-            <button type="button" class="zn-btn zn-btn-out zn-btn-sm" id="btn-cancel-personal" hidden>Cancel</button>
-            <button type="button" class="zn-btn zn-btn-out zn-btn-sm" id="btn-edit-personal">
-                <i class="bi bi-pencil"></i> Edit details
-            </button>
-            <button type="submit" class="zn-btn zn-btn-sm" id="btn-save-personal" hidden>Save changes</button>
-        </div>
-    </div>
 </form>
 
 @endsection
@@ -296,6 +305,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnCancel.hidden = !on;
         btnSave.hidden = !on;
         document.body.classList.toggle('zn-editing', on);
+        document.getElementById('personal-toolbar').classList.toggle('is-editing', on);
     }
 
     btnEdit.addEventListener('click', () => setEditing(true));
@@ -432,6 +442,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const photoInput = document.getElementById('personal-img-input');
     document.getElementById('btn-change-photo').addEventListener('click', () => photoInput.click());
 
+    const photoStatus = document.getElementById('personal-img-status');
+
+    function say(message, failed) {
+        photoStatus.textContent = message;
+        photoStatus.classList.toggle('is-error', !!failed);
+        photoStatus.hidden = false;
+    }
+
+    // Swaps the new photo in where the old photo (or the initials) was, so the
+    // applicant sees what was saved without the page reloading under them.
+    function showPhoto(url) {
+        const current = document.getElementById('personal-img-preview');
+        const img = document.createElement('img');
+        img.id = 'personal-img-preview';
+        img.alt = '';
+        img.src = url + '?v=' + Date.now();
+        current.replaceWith(img);
+        document.getElementById('btn-change-photo').textContent = 'Change photo';
+    }
+
     photoInput.addEventListener('change', function () {
         if (!photoInput.files.length) return;
 
@@ -439,9 +469,24 @@ document.addEventListener('DOMContentLoaded', function () {
         data.append('image', photoInput.files[0]);
         data.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
-        fetch(@json(route('file.store')), { method: 'POST', body: data })
-            .then(() => window.location.reload())
-            .catch(() => alert('That photo could not be uploaded. Please try another file.'));
+        say('Saving photo\u2026');
+
+        fetch(@json(route('file.store')), {
+            method: 'POST',
+            body: data,
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then(response => response.json().catch(() => ({})))
+            .then(function (result) {
+                if (!result.success) {
+                    say(result.error || 'That photo could not be saved. Please try again.', true);
+                    return;
+                }
+                showPhoto(result.url);
+                say('Photo saved.');
+            })
+            .catch(() => say('That photo could not be uploaded. Please try another file.', true))
+            .finally(() => { photoInput.value = ''; });
     });
 });
 </script>

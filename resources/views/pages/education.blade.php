@@ -75,14 +75,14 @@
 <div id="form-education-wrap" class="zn-card d-none">
     <div class="zn-section"><h5 id="form-education-heading">Add school</h5></div>
 
-    <form id="form-education" method="POST" action="{{ route('education.store') }}">
+    <form id="form-education" data-unsaved-guard method="POST" action="{{ route('education.store') }}">
         @csrf
         <input type="hidden" name="education-id" id="education-id">
 
         <div class="zn-grid">
             <div class="zn-fld zn-col-4">
                 <label for="education-level">Level <span class="zn-req">*</span></label>
-                <select name="education-level" id="education-level">
+                <select name="education-level" id="education-level" required>
                     <option value="">Select</option>
                     <option value="Primary">Primary</option>
                     <option value="Secondary">Secondary</option>
@@ -91,31 +91,32 @@
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="education-curstat">Status <span class="zn-req">*</span></label>
-                <select name="education-curstat" id="education-curstat">
+                <select name="education-curstat" id="education-curstat" required>
                     <option value="">Select</option>
                     <option value="Completed">Completed</option>
                     <option value="Graduated">Graduated</option>
+                    <option value="Currently enrolled">Currently enrolled</option>
                 </select>
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="education-school">School <span class="zn-req">*</span></label>
-                <input type="text" name="education-school" id="education-school">
+                <input type="text" name="education-school" id="education-school" required maxlength="50">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="education-degree">Degree / title <span class="zn-opt">optional</span></label>
-                <input type="text" name="education-degree" id="education-degree" placeholder="Not needed for primary or secondary">
+                <input type="text" name="education-degree" id="education-degree" placeholder="For tertiary education" maxlength="50">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="education-major">Major <span class="zn-opt">optional</span></label>
-                <input type="text" name="education-major" id="education-major">
+                <input type="text" name="education-major" id="education-major" maxlength="50">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="education-year-graduated">Year graduated <span class="zn-opt">optional</span></label>
-                <input type="number" name="education-year-graduated" id="education-year-graduated" placeholder="Leave blank if still studying">
+                <input type="number" name="education-year-graduated" id="education-year-graduated" placeholder="e.g. 2020">
             </div>
             <div class="zn-fld zn-col-12">
                 <label for="education-address">School address <span class="zn-opt">optional</span></label>
-                <input type="text" name="education-address" id="education-address">
+                <input type="text" name="education-address" id="education-address" maxlength="50">
             </div>
         </div>
 
@@ -144,18 +145,46 @@
         document.querySelectorAll('#form-education input, #form-education select').forEach(function (el) {
             if (el.type !== 'hidden' || el.id === 'education-id') el.value = '';
         });
+        sync_education_rules();
         show_education_form('Add school');
     }
 
+    // Mirrors EducationController::store: a degree title only for tertiary
+    // education, a graduation year unless the applicant is still enrolled.
+    function sync_education_rules() {
+        const level = document.getElementById('education-level').value;
+        const status = document.getElementById('education-curstat').value;
+        set_education_required('education-degree', level === 'Tertiary');
+        set_education_required('education-year-graduated', status !== 'Currently enrolled');
+        const year = document.getElementById('education-year-graduated');
+        year.disabled = status === 'Currently enrolled';
+        if (year.disabled) year.value = '';
+    }
+
+    function set_education_required(id, required) {
+        const input = document.getElementById(id);
+        input.required = required;
+        const marker = document.querySelector('label[for="' + id + '"] .zn-req, label[for="' + id + '"] .zn-opt');
+        if (marker) {
+            marker.className = required ? 'zn-req' : 'zn-opt';
+            marker.textContent = required ? '*' : (id === 'education-year-graduated' ? 'not applicable' : 'optional');
+        }
+    }
+
+    ['education-level', 'education-curstat'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', sync_education_rules);
+    });
+
     function edit_education(e) {
         document.getElementById('education-id') && (document.getElementById('education-id').value = e.dataset.eduid || '');
-        document.getElementById('level') && (document.getElementById('level').value = e.dataset.level || '');
-        document.getElementById('degree') && (document.getElementById('degree').value = e.dataset.degree || '');
-        document.getElementById('major') && (document.getElementById('major').value = e.dataset.major || '');
-        document.getElementById('school') && (document.getElementById('school').value = e.dataset.school || '');
-        document.getElementById('address') && (document.getElementById('address').value = e.dataset.address || '');
-        document.getElementById('yeargrad') && (document.getElementById('yeargrad').value = e.dataset.yeargrad || '');
-        document.getElementById('curstat') && (document.getElementById('curstat').value = e.dataset.curstat || '');
+        document.getElementById('education-level') && (document.getElementById('education-level').value = e.dataset.level || '');
+        document.getElementById('education-degree') && (document.getElementById('education-degree').value = e.dataset.degree || '');
+        document.getElementById('education-major') && (document.getElementById('education-major').value = e.dataset.major || '');
+        document.getElementById('education-school') && (document.getElementById('education-school').value = e.dataset.school || '');
+        document.getElementById('education-address') && (document.getElementById('education-address').value = e.dataset.address || '');
+        document.getElementById('education-year-graduated') && (document.getElementById('education-year-graduated').value = e.dataset.yeargrad || '');
+        document.getElementById('education-curstat') && (document.getElementById('education-curstat').value = e.dataset.curstat || '');
+        sync_education_rules();
         show_education_form('Edit school');
     }
 

@@ -47,6 +47,42 @@ return [
             'report' => false,
         ],
 
+        /*
+        | Applicant documents (résumé, 2x2 picture, cover letter). Private.
+        |
+        | Separate from the shared 's3' disk on purpose: profile photos,
+        | licences and certificates keep their existing behaviour untouched.
+        |
+        | Local development stores files on this machine. Production uses the
+        | company bucket under the zenhub/ prefix, with credentials that belong
+        | to this application alone — never zen-admin's AWS_* keys. Leave the
+        | key and secret empty to use the server's IAM role instead.
+        */
+        'applicant_documents' => env('APPLICANT_DOCUMENTS_DRIVER', 'local') === 's3'
+            ? [
+                'driver' => 's3',
+                'key' => env('APPLICANT_DOCUMENTS_AWS_ACCESS_KEY_ID'),
+                'secret' => env('APPLICANT_DOCUMENTS_AWS_SECRET_ACCESS_KEY'),
+                'region' => env('APPLICANT_DOCUMENTS_AWS_REGION', 'ap-southeast-1'),
+                'bucket' => env('APPLICANT_DOCUMENTS_AWS_BUCKET', 'e-classtngcacademy'),
+                'root' => env('APPLICANT_DOCUMENTS_AWS_ROOT', 'zenhub'),
+                // S3 keys always use "/". Without this Laravel joins the root
+                // with the host OS separator, giving "zenhub\applicant/…" on
+                // Windows.
+                'directory_separator' => '/',
+                // Uploads carry the S3 driver's default "private" ACL, exactly as
+                // zen-admin's existing uploads do — so the IAM policy for this
+                // app needs s3:PutObjectAcl alongside s3:PutObject.
+                'throw' => true,
+                'report' => false,
+            ]
+            : [
+                'driver' => 'local',
+                'root' => env('APPLICANT_DOCUMENTS_LOCAL_ROOT', storage_path('app/private')),
+                'throw' => true,
+                'report' => false,
+            ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

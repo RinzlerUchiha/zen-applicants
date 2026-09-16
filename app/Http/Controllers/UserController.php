@@ -29,15 +29,30 @@ class UserController extends Controller
             ->select('a.*', 'b.ct_name as br_city_name')
             ->get();
 
-        // Pull the position from the applicant's most recent job application,
-        // rather than the stale free-text snapshot in app_posapplied.
-        $latestApplication = Application::where('app_id', $user?->app_id)
+        // Every position applied for, from the applications themselves
+        // (tblapp_applications.job_posting_id → tbl_job_posting). An applicant
+        // can apply to several postings, so this is a list — newest first — not
+        // one value. Titles are looked up in a single query.
+        $applications = Application::where('app_id', $user?->app_id)
             ->orderByDesc('applied_at')
-            ->first();
+            ->get(['id', 'job_posting_id', 'status', 'applied_at']);
 
-        $appliedPosition = $latestApplication?->jobPosting()?->posting_title;
+        $titles = $applications->pluck('job_posting_id')->filter()->isEmpty()
+            ? collect()
+            : DB::connection('zen')->table('tbl_job_posting')
+                ->whereIn('id', $applications->pluck('job_posting_id')->filter()->unique())
+                ->pluck('posting_title', 'id');
 
-        return view('pages.personal', compact('user', 'provinceList', 'municipalityList', 'barangayList', 'appliedPosition'));
+        $appliedPositions = $applications
+            ->map(fn ($application) => [
+                'title' => $titles[$application->job_posting_id] ?? null,
+                'status' => $application->status,
+                'applied_at' => $application->applied_at,
+            ])
+            ->filter(fn ($application) => $application['title'])
+            ->values();
+
+        return view('pages.personal', compact('user', 'provinceList', 'municipalityList', 'barangayList', 'appliedPositions'));
     }
 
     public static function store(Request $request)
@@ -257,11 +272,9 @@ class UserController extends Controller
                 //     'app_weight' => $validated['personal-weight'],
                 // ]);
 
-                // Editing your profile must never silently reassign the position
-                // you applied for — that is owned by the job posting, not this form.
-                if (!empty($validated['position-applied'])) {
-                    $user->app_posapplied = $validated['position-applied'];
-                }
+                // Editing the profile never touches app_posapplied. The positions an
+                // applicant applied for belong to their applications, and this form
+                // no longer sends one.
 
                 $user->app_lname = $validated['personal-lastname'];
                 $user->app_fname = $validated['personal-firstname'];
@@ -328,32 +341,62 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Saves the applicant's profile photo on its own, independent of Edit.
+     *
+     * Always answers in JSON with success and either the photo's URL or a
+     * message the page can show. Previously a failure still returned 200 and the
+     * page reloaded regardless, so a photo that did not save looked as if it had.
+     */
     public static function storeProfileImg(Request $request)
     {
-        try {
-            $request->validate([
-                // 'appid' => 'required|integer',
-                'image' => 'mimes:jpg,jpeg,png'
-            ]);
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|file|mimes:jpg,jpeg,png|max:5120',
+        ], [
+            'image.required' => 'Please choose a photo.',
+            'image.mimes' => 'Please use a JPG or PNG photo.',
+            'image.max' => 'That photo is too large. The limit is 5 MB.',
+            'image.file' => 'That photo could not be read. Please try another file.',
+        ]);
 
-            if ($request->hasFile('image')) {
-                $file = $request->file('image');
-                $fileName = time() . '_' . auth()->user()->app_id . '.' . $file->getClientOriginalExtension();
-
-                $fileName = basename(FileService::reduceImageFileSizeToWebP(
-                    $file->getRealPath(),
-                    'applicant/images/' . $fileName,
-                    'public'
-                ));
-
-                auth()->user()->update(['app_img' => $fileName]);
-
-                return response()->json(['success' => true]);
-            }
-
-            return response()->json(['error' => 'No file uploaded'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => 'Failed: ' . $e->getMessage()]);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'error' => $validator->errors()->first('image')], 422);
         }
+
+        $user = auth()->user();
+        $file = $request->file('image');
+        $folder = 'applicant/images';
+
+        // app_img is varchar(20): a base-36 timestamp keeps the name short enough
+        // for any realistic applicant id. The extension comes from the file's
+        // content, never from the name it was uploaded with.
+        $base = base_convert((string) time(), 10, 36) . '_' . $user->app_id;
+        $extension = $file->extension() === 'png' ? 'png' : 'jpg';
+
+        try {
+            $stored = basename(FileService::reduceImageFileSizeToWebP(
+                $file->getRealPath(),
+                "$folder/$base.$extension",
+                'public'
+            ));
+        } catch (\Throwable $e) {
+            // Compression needs PHP's GD extension. Without it the photo is still
+            // worth keeping — store the original rather than lose it.
+            report($e);
+
+            try {
+                $stored = "$base.$extension";
+                $file->storeAs($folder, $stored, 'public');
+            } catch (\Throwable $e) {
+                report($e);
+
+                return response()->json(['success' => false, 'error' => 'That photo could not be saved. Please try again.'], 500);
+            }
+        }
+
+        $user->app_img = $stored;
+        $user->save();
+
+        return response()->json(['success' => true, 'url' => url('/file/app-img/' . $stored)]);
     }
 }

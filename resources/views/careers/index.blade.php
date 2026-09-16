@@ -4,19 +4,11 @@
 
 @section('content')
 
-<div class="d-flex align-items-start justify-content-between gap-3 mb-3 flex-wrap">
-    <div>
-        <p class="zn-page-title" style="margin-bottom:2px">Open positions</p>
-        <p class="zn-page-sub" style="margin-bottom:0">
-            {{ $postings->count() }} {{ Str::plural('role', $postings->count()) }} currently hiring.
-        </p>
-    </div>
-    @auth
-        <div class="d-flex gap-2">
-            <a class="zn-btn zn-btn-out zn-btn-sm" href="{{ route('applications.index') }}">My applications</a>
-            <a class="zn-btn zn-btn-sm" href="{{ route('home') }}">My application</a>
-        </div>
-    @endauth
+<div class="mb-3">
+    <p class="zn-page-title" style="margin-bottom:2px">Open positions</p>
+    <p class="zn-page-sub" style="margin-bottom:0">
+        {{ $postings->count() }} {{ Str::plural('role', $postings->count()) }} currently hiring.
+    </p>
 </div>
 
 @if ($postings->isEmpty())

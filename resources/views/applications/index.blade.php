@@ -13,12 +13,9 @@
             <div class="zn-toast error"><i class="bi bi-exclamation-circle-fill"></i> {{ session('error') }}</div>
         @endif
 
-        <div class="d-flex align-items-start justify-content-between gap-3 mb-3 flex-wrap">
-            <div>
-                <p class="zn-page-title" style="margin-bottom:2px">My applications</p>
-                <p class="zn-page-sub" style="margin-bottom:0">Everything you've applied to, and where each one stands.</p>
-            </div>
-            <a class="zn-btn zn-btn-out zn-btn-sm" href="{{ route('careers.index') }}">Browse more jobs</a>
+        <div class="mb-3">
+            <p class="zn-page-title" style="margin-bottom:2px">My applications</p>
+            <p class="zn-page-sub" style="margin-bottom:0">Everything you've applied to, and where each one stands.</p>
         </div>
 
         @forelse ($applications as $application)
@@ -64,7 +61,7 @@
                 <b>You haven't applied to any positions yet</b>
                 Browse our open roles — your profile carries over to every application, so you only fill it in once.
                 <div class="mt-3">
-                    <a class="zn-btn zn-btn-sm" href="{{ route('careers.index') }}">See open positions</a>
+                    <a class="zn-btn zn-btn-sm" href="{{ route('careers.index') }}">View open positions</a>
                 </div>
             </div>
         @endforelse

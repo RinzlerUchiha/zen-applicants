@@ -4,7 +4,34 @@
 
 @section('section')
 
-<p class="zn-help" style="margin-top:0">Where you have worked before. If this is your first job, tick the box below instead.</p>
+@php $firstJob = (bool) auth()->user()->app_no_work_experience; @endphp
+
+<p class="zn-help" style="margin-top:0">
+    Where you have worked, including a job you have now.
+    @if ($employment->isEmpty())
+        If you have not worked before, say so below — nothing else is needed here.
+    @endif
+</p>
+
+{{-- A first-time job seeker has nothing to list. Saying so completes the
+     section (skip_flag in config/application_form.php). Only offered while no
+     job is recorded; adding a job clears it. --}}
+@if ($employment->isEmpty())
+    <form method="POST" action="{{ route('employment.first-job') }}" class="zn-card zn-firstjob" id="form-first-job">
+        @csrf
+        <input type="hidden" name="first-job" value="0">
+        <label class="zn-check zn-check-lg" for="first-job">
+            <input type="checkbox" name="first-job" id="first-job" value="1" @checked($firstJob)
+                   onchange="this.form.submit()">
+            <span>
+                <b>This is my first job</b> — I have no previous work experience.
+                @if ($firstJob)
+                    <span class="zn-firstjob-note">Your employment record is complete. Untick this if you want to add a job.</span>
+                @endif
+            </span>
+        </label>
+    </form>
+@endif
 
 {{-- Saved entries. Cards rather than a table: the same layout reads on a
      phone without horizontal scrolling, and each entry can carry its own
@@ -28,6 +55,7 @@
                             data-from="{{ $list->empl_from }}"
                             data-to="{{ $list->empl_to }}"
                             data-reason="{{ $list->empl_reason }}"
+                            data-current="{{ $list->empl_is_current ? 1 : 0 }}"
                             onclick="edit_employment(this)">Edit</button>
                     <button type="button" class="zn-link" style="font-size:12px;color:var(--zn-warn)"
                             data-employmentid="{{ $list->empl_id }}"
@@ -41,22 +69,28 @@
                     </div>
                     <div>
                         <span class="zn-fact-label">To</span>
-                        <span class="zn-fact-value @if(!$list->empl_to) empty @endif">{{ $list->empl_to ?: 'Not provided' }}</span>
+                        @if ($list->empl_is_current)
+                            <span class="zn-fact-value">Present</span>
+                        @else
+                            <span class="zn-fact-value @if(!$list->empl_to) empty @endif">{{ $list->empl_to ?: 'Not provided' }}</span>
+                        @endif
                     </div>
                     <div>
                         <span class="zn-fact-label">Supervisor</span>
                         <span class="zn-fact-value @if(!$list->empl_supervisor) empty @endif">{{ $list->empl_supervisor ?: 'Not provided' }}</span>
                     </div>
-                    <div>
-                        <span class="zn-fact-label">Reason for leaving</span>
-                        <span class="zn-fact-value @if(!$list->empl_reason) empty @endif">{{ $list->empl_reason ?: 'Not provided' }}</span>
-                    </div>
+                    @unless ($list->empl_is_current)
+                        <div>
+                            <span class="zn-fact-label">Reason for leaving</span>
+                            <span class="zn-fact-value @if(!$list->empl_reason) empty @endif">{{ $list->empl_reason ?: 'Not provided' }}</span>
+                        </div>
+                    @endunless
                 </div>
         </div>
     @empty
         <div class="zn-empty">
-            <b>No previous jobs added yet.</b>
-            Use the button below to add your first one.
+            <b>No jobs added yet.</b>
+            Add one below, or tick "This is my first job" above.
         </div>
     @endforelse
 
@@ -76,38 +110,44 @@
 <div id="form-employment-wrap" class="zn-card d-none">
     <div class="zn-section"><h5 id="form-employment-heading">Add job</h5></div>
 
-    <form id="form-employment" method="POST" action="{{ route('employment.store') }}">
+    <form id="form-employment" data-unsaved-guard method="POST" action="{{ route('employment.store') }}">
         @csrf
         <input type="hidden" name="employment-id" id="employment-id">
 
         <div class="zn-grid">
             <div class="zn-fld zn-col-6">
                 <label for="employment-company">Company <span class="zn-req">*</span></label>
-                <input type="text" name="employment-company" id="employment-company">
+                <input type="text" name="employment-company" id="employment-company" required maxlength="50">
             </div>
             <div class="zn-fld zn-col-6">
                 <label for="employment-position">Position <span class="zn-req">*</span></label>
-                <input type="text" name="employment-position" id="employment-position">
+                <input type="text" name="employment-position" id="employment-position" required maxlength="20">
+            </div>
+            <div class="zn-col-full">
+                <label class="zn-check" for="employment-current">
+                    <input type="checkbox" name="employment-current" id="employment-current" value="1">
+                    <span>I currently work here</span>
+                </label>
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="employment-start-date">Date from <span class="zn-req">*</span></label>
-                <input type="date" name="employment-start-date" id="employment-start-date">
+                <input type="date" name="employment-start-date" id="employment-start-date" required>
             </div>
-            <div class="zn-fld zn-col-4">
-                <label for="employment-end-date">Date to <span class="zn-opt">optional</span></label>
-                <input type="date" name="employment-end-date" id="employment-end-date" placeholder="Leave blank if you still work here">
+            <div class="zn-fld zn-col-4" data-when-not-current>
+                <label for="employment-end-date">Date to <span class="zn-req">*</span></label>
+                <input type="date" name="employment-end-date" id="employment-end-date" required>
             </div>
-            <div class="zn-fld zn-col-4">
-                <label for="employment-reason">Reason for leaving <span class="zn-opt">optional</span></label>
-                <input type="text" name="employment-reason" id="employment-reason">
+            <div class="zn-fld zn-col-4" data-when-not-current>
+                <label for="employment-reason">Reason for leaving <span class="zn-req">*</span></label>
+                <input type="text" name="employment-reason" id="employment-reason" required maxlength="100">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="employment-supervisor">Supervisor <span class="zn-opt">optional</span></label>
-                <input type="text" name="employment-supervisor" id="employment-supervisor">
+                <input type="text" name="employment-supervisor" id="employment-supervisor" maxlength="20">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="employment-contact">Supervisor contact <span class="zn-opt">optional</span></label>
-                <input type="text" name="employment-contact" id="employment-contact">
+                <input type="text" name="employment-contact" id="employment-contact" maxlength="20">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="employment-address">Company address <span class="zn-opt">optional</span></label>
@@ -138,21 +178,39 @@
 
     function add_employment() {
         document.querySelectorAll('#form-employment input, #form-employment select').forEach(function (el) {
+            if (el.type === 'checkbox') { el.checked = false; return; }
             if (el.type !== 'hidden' || el.id === 'employment-id') el.value = '';
         });
+        sync_employment_current();
         show_employment_form('Add job');
     }
 
+    // A job the applicant still holds has no end date or reason for leaving:
+    // those fields are hidden, not required, and not sent.
+    function sync_employment_current() {
+        const current = document.getElementById('employment-current').checked;
+        document.querySelectorAll('#form-employment [data-when-not-current]').forEach(function (wrap) {
+            wrap.hidden = current;
+            wrap.querySelectorAll('input').forEach(function (input) {
+                input.required = !current;
+                input.disabled = current;
+            });
+        });
+    }
+    document.getElementById('employment-current').addEventListener('change', sync_employment_current);
+
     function edit_employment(e) {
         document.getElementById('employment-id') && (document.getElementById('employment-id').value = e.dataset.employmentid || '');
-        document.getElementById('company') && (document.getElementById('company').value = e.dataset.company || '');
-        document.getElementById('address') && (document.getElementById('address').value = e.dataset.address || '');
-        document.getElementById('position') && (document.getElementById('position').value = e.dataset.position || '');
-        document.getElementById('supervisor') && (document.getElementById('supervisor').value = e.dataset.supervisor || '');
-        document.getElementById('contact') && (document.getElementById('contact').value = e.dataset.contact || '');
-        document.getElementById('from') && (document.getElementById('from').value = e.dataset.from || '');
-        document.getElementById('to') && (document.getElementById('to').value = e.dataset.to || '');
-        document.getElementById('reason') && (document.getElementById('reason').value = e.dataset.reason || '');
+        document.getElementById('employment-company') && (document.getElementById('employment-company').value = e.dataset.company || '');
+        document.getElementById('employment-address') && (document.getElementById('employment-address').value = e.dataset.address || '');
+        document.getElementById('employment-position') && (document.getElementById('employment-position').value = e.dataset.position || '');
+        document.getElementById('employment-supervisor') && (document.getElementById('employment-supervisor').value = e.dataset.supervisor || '');
+        document.getElementById('employment-contact') && (document.getElementById('employment-contact').value = e.dataset.contact || '');
+        document.getElementById('employment-start-date') && (document.getElementById('employment-start-date').value = e.dataset.from || '');
+        document.getElementById('employment-end-date') && (document.getElementById('employment-end-date').value = e.dataset.to || '');
+        document.getElementById('employment-reason') && (document.getElementById('employment-reason').value = e.dataset.reason || '');
+        document.getElementById('employment-current').checked = e.dataset.current === '1';
+        sync_employment_current();
         show_employment_form('Edit job');
     }
 

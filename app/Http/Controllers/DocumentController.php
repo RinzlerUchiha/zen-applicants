@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentRequest;
+use App\Models\User;
+use App\Services\ApplicantDocumentStatus;
 use App\Services\FileService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -12,42 +16,32 @@ class DocumentController extends Controller
 {
     public function index()
     {
-        $documents = Document::where('app_id', auth()->user()->app_id)
-            ->orderByDesc('uploaded_at')
-            ->get();
+        $appId = auth()->user()->app_id;
 
-        $required = collect(config('documents.required', []));
-        $optional = collect(config('documents.optional', []));
-        $laterStage = collect(config('documents.later_stage', []));
-
-        // Only what is actually being asked for now is offered. Later-stage
-        // documents stay defined in config for HR and the eventual 201 file,
-        // but showing them here would present the applicant with five items
-        // nobody has requested yet.
-        $selectable = collect(config('documents.types'))
-            ->reject(fn ($label, $key) => $laterStage->contains($key));
+        $slots = ApplicantDocumentStatus::slots($appId);
 
         return view('pages.documents', [
-            'documents'  => $documents,
-            'types'      => $selectable,
-            'required'   => $required,
-            'optional'   => $optional,
-            'otherType'  => config('documents.other_type'),
+            'required'   => $slots->where('required', true),
+            'optional'   => $slots->where('required', false),
+            'attention'  => $slots->filter(fn ($slot) => $slot['needs_action']),
             'maxSizeKb'  => config('documents.max_size_kb'),
             'extensions' => config('documents.extensions'),
-            'submitted'  => $required->filter(fn ($t) => $documents->contains('doc_type', $t))->count(),
         ]);
     }
 
+    /**
+     * Uploads a document, or replaces the one already on file for that type.
+     *
+     * A replacement is not a new version to manage: the record is updated and
+     * HR's check resets to pending, so a decision about the previous file never
+     * applies to this one. The previous file is removed once the record points
+     * at the new one.
+     */
     public function store(Request $request)
     {
-        $otherType = config('documents.other_type');
-
         $validated = $request->validate(
             [
-                'doc_type' => ['required', Rule::in(array_keys(config('documents.types')))],
-                // Only the "Other" type carries an applicant-supplied name.
-                'doc_label' => ['nullable', 'string', 'max:150', Rule::requiredIf($request->input('doc_type') === $otherType)],
+                'doc_type' => ['required', Rule::in(ApplicantDocumentStatus::uploadableTypes())],
                 'doc_file' => [
                     'required',
                     'file',
@@ -57,8 +51,7 @@ class DocumentController extends Controller
             ],
             [
                 'doc_type.required' => 'Please choose a document type.',
-                'doc_type.in' => 'That document type is not recognised.',
-                'doc_label.required' => 'Please give this document a name.',
+                'doc_type.in' => 'That document type is not accepted at this stage.',
                 'doc_file.required' => 'Please choose a file to upload.',
                 'doc_file.mimes' => 'Only PDF, JPG and PNG files are accepted.',
                 'doc_file.max' => 'The file is too large. The limit is ' . round(config('documents.max_size_kb') / 1024) . ' MB.',
@@ -66,13 +59,12 @@ class DocumentController extends Controller
         );
 
         $appId = auth()->user()->app_id;
+        $type = $validated['doc_type'];
+        $disk = config('documents.disk');
+        $folder = config('documents.path') . '/' . $appId;
 
         try {
-            $stored = FileService::storeDocument(
-                $request->file('doc_file'),
-                config('documents.path') . '/' . $appId,
-                $this->disk()
-            );
+            $stored = FileService::storeDocument($request->file('doc_file'), $folder, $disk);
         } catch (\Throwable $e) {
             report($e);
 
@@ -80,19 +72,66 @@ class DocumentController extends Controller
                 ->withErrors(['doc_file' => 'That file could not be uploaded. Please try a different file.']);
         }
 
-        Document::create([
-            'app_id' => $appId,
-            'doc_type' => $validated['doc_type'],
-            // A label on any other type would contradict the type's own name.
-            'doc_label' => $validated['doc_type'] === $otherType ? $validated['doc_label'] : null,
-            'doc_file' => $stored['file'],
-            'doc_original_name' => $stored['original_name'],
-            'doc_mime' => $stored['mime'],
-            'doc_size' => $stored['size'],
-            'uploaded_at' => now(),
-        ]);
+        $key = $folder . '/' . $stored['file'];
 
-        return redirect()->route('documents.index')->with('success', 'Document uploaded.');
+        try {
+            $previousPath = DB::transaction(function () use ($appId, $type, $key, $stored) {
+                // Serialise uploads per applicant, so two submissions of the
+                // same type cannot both create a record.
+                User::where('app_id', $appId)->lockForUpdate()->first();
+
+                $document = Document::where('app_id', $appId)
+                    ->where('doc_type', $type)
+                    ->orderByDesc('id')
+                    ->first();
+
+                $previousPath = $document?->storage_path;
+
+                $fields = [
+                    'doc_file' => $key,
+                    'doc_label' => null,
+                    'doc_original_name' => $stored['original_name'],
+                    'doc_mime' => $stored['mime'],
+                    'doc_size' => $stored['size'],
+                    'uploaded_at' => now(),
+                    // A new file has not been checked by anyone.
+                    'review_status' => 'pending',
+                    'review_reason' => null,
+                    'review_note' => null,
+                    'reviewed_by' => null,
+                    'reviewed_at' => null,
+                ];
+
+                if ($document) {
+                    $document->update($fields);
+                } else {
+                    Document::create(['app_id' => $appId, 'doc_type' => $type] + $fields);
+                }
+
+                // Answering HR's request hands it back to HR.
+                DocumentRequest::where('app_id', $appId)
+                    ->where('doc_type', $type)
+                    ->active()
+                    ->update(['status' => 'submitted', 'submitted_at' => now()]);
+
+                return $previousPath;
+            });
+        } catch (\Throwable $e) {
+            report($e);
+            $this->deleteQuietly($disk, $key);
+
+            return redirect()->route('documents.index')
+                ->withErrors(['doc_file' => 'That file could not be saved. Please try again.']);
+        }
+
+        if ($previousPath && $previousPath !== $key) {
+            $this->deleteQuietly($disk, $previousPath);
+        }
+
+        return redirect()->route('documents.index')->with(
+            'success',
+            $previousPath ? 'Document replaced. HR will check the new file.' : 'Document uploaded.'
+        );
     }
 
     /**
@@ -102,9 +141,11 @@ class DocumentController extends Controller
      */
     public function view($id)
     {
-        $document = $this->ownedOrFail($id);
+        $document = Document::where('id', $id)
+            ->where('app_id', auth()->user()->app_id)
+            ->firstOrFail();
 
-        $disk = Storage::disk($this->disk());
+        $disk = Storage::disk(config('documents.disk'));
 
         if (!$disk->exists($document->storage_path)) {
             abort(404);
@@ -131,43 +172,19 @@ class DocumentController extends Controller
             // The applicant's own filename is only ever a header value, never
             // a path. Quotes and newlines are stripped so it cannot break out
             // of the header or inject another one.
-            'Content-Disposition' => 'inline; filename="' . $this->safeHeaderName($document->doc_original_name) . '"',
-            // Never let a browser second-guess the type we just declared.
+            'Content-Disposition' => 'inline; filename="' . str_replace(['"', "\r", "\n"], '', $document->doc_original_name) . '"',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, max-age=0, no-store',
         ]);
     }
 
-    public function delete($id)
+    /** Clean-up only: a leftover private file is harmless, a failed request is not. */
+    private function deleteQuietly(string $disk, string $path): void
     {
-        $document = $this->ownedOrFail($id);
-
-        // Remove the row first: an orphaned file is recoverable, a row
-        // pointing at a deleted file renders as a broken link to the applicant.
-        $path = $document->storage_path;
-        $document->delete();
-
-        Storage::disk($this->disk())->delete($path);
-
-        return redirect()->route('documents.index')->with('success', 'Document removed.');
-    }
-
-    /** Documents are readable only by the applicant who uploaded them. */
-    private function ownedOrFail($id): Document
-    {
-        return Document::where('id', $id)
-            ->where('app_id', auth()->user()->app_id)
-            ->firstOrFail();
-    }
-
-    /** Matches the disk convention already used across this application. */
-    private function disk(): string
-    {
-        return app()->environment('production') ? 's3' : 'public';
-    }
-
-    private function safeHeaderName(string $name): string
-    {
-        return str_replace(['"', "\r", "\n"], '', $name);
+        try {
+            Storage::disk($disk)->delete($path);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

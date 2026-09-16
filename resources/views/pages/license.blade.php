@@ -38,7 +38,7 @@
                     </div>
                     <div>
                         <span class="zn-fact-label">Valid until</span>
-                        <span class="zn-fact-value @if(!$list->el_expdate) empty @endif">{{ $list->el_expdate ?: 'Not provided' }}</span>
+                        <span class="zn-fact-value">{{ $list->el_expdate ?: 'Does not expire' }}</span>
                     </div>
                     @if ($list->el_file)
                         <div>
@@ -72,7 +72,7 @@
 <div id="form-license-wrap" class="zn-card d-none">
     <div class="zn-section"><h5 id="form-license-heading">Add licence</h5></div>
 
-    <form id="form-license" method="POST" action="{{ route('license.store') }}" enctype="multipart/form-data">
+    <form id="form-license" data-unsaved-guard method="POST" action="{{ route('license.store') }}" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="license-id" id="license-id">
             <input type="hidden" name="license-attachment-current" id="license-attachment-current">
@@ -80,19 +80,23 @@
         <div class="zn-grid">
             <div class="zn-fld zn-col-6">
                 <label for="license-type">Licence type <span class="zn-req">*</span></label>
-                <input type="text" name="license-type" id="license-type">
+                <input type="text" name="license-type" id="license-type" required maxlength="50">
             </div>
             <div class="zn-fld zn-col-6">
                 <label for="license-profession">Profession <span class="zn-req">*</span></label>
-                <input type="text" name="license-profession" id="license-profession">
+                <input type="text" name="license-profession" id="license-profession" required maxlength="50">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="license-registration-date">Registration date <span class="zn-req">*</span></label>
-                <input type="date" name="license-registration-date" id="license-registration-date">
+                <input type="date" name="license-registration-date" id="license-registration-date" required>
             </div>
             <div class="zn-fld zn-col-4">
-                <label for="license-valid-until">Valid until <span class="zn-opt">optional</span></label>
-                <input type="date" name="license-valid-until" id="license-valid-until" placeholder="Blank if it does not expire">
+                <label for="license-valid-until">Valid until <span class="zn-req">*</span></label>
+                <input type="date" name="license-valid-until" id="license-valid-until" required>
+                <label class="zn-check" for="license-no-expiry" style="margin-top:6px">
+                    <input type="checkbox" name="license-no-expiry" id="license-no-expiry" value="1">
+                    <span>This does not expire</span>
+                </label>
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="license-attachment">Attachment <span class="zn-opt">optional</span></label>
@@ -123,18 +127,37 @@
 
     function add_license() {
         document.querySelectorAll('#form-license input, #form-license select').forEach(function (el) {
+            if (el.type === 'checkbox') { el.checked = false; return; }
             if (el.type !== 'hidden' || el.id === 'license-id') el.value = '';
         });
+        sync_license_expiry();
         show_license_form('Add licence');
     }
 
+    // A licence that does not expire has no "valid until" date to give.
+    function sync_license_expiry() {
+        const noExpiry = document.getElementById('license-no-expiry').checked;
+        const date = document.getElementById('license-valid-until');
+        date.required = !noExpiry;
+        date.disabled = noExpiry;
+        if (noExpiry) date.value = '';
+        const marker = document.querySelector('label[for="license-valid-until"] .zn-req, label[for="license-valid-until"] .zn-opt');
+        if (marker) {
+            marker.className = noExpiry ? 'zn-opt' : 'zn-req';
+            marker.textContent = noExpiry ? 'not applicable' : '*';
+        }
+    }
+    document.getElementById('license-no-expiry').addEventListener('change', sync_license_expiry);
+
     function edit_license(e) {
         document.getElementById('license-id') && (document.getElementById('license-id').value = e.dataset.licenseid || '');
-        document.getElementById('type') && (document.getElementById('type').value = e.dataset.type || '');
-        document.getElementById('profession') && (document.getElementById('profession').value = e.dataset.profession || '');
-        document.getElementById('registerdate') && (document.getElementById('registerdate').value = e.dataset.registerdate || '');
-        document.getElementById('validuntil') && (document.getElementById('validuntil').value = e.dataset.validuntil || '');
-        document.getElementById('attachment') && (document.getElementById('attachment').value = e.dataset.attachment || '');
+        document.getElementById('license-type') && (document.getElementById('license-type').value = e.dataset.type || '');
+        document.getElementById('license-profession') && (document.getElementById('license-profession').value = e.dataset.profession || '');
+        document.getElementById('license-registration-date') && (document.getElementById('license-registration-date').value = e.dataset.registerdate || '');
+        document.getElementById('license-valid-until') && (document.getElementById('license-valid-until').value = e.dataset.validuntil || '');
+        document.getElementById('license-no-expiry').checked = !e.dataset.validuntil;
+        sync_license_expiry();
+        document.getElementById('license-attachment-current') && (document.getElementById('license-attachment-current').value = e.dataset.attachment || '');
         show_license_form('Edit licence');
     }
 

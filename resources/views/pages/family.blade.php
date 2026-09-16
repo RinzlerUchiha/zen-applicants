@@ -80,14 +80,14 @@
 <div id="form-family-wrap" class="zn-card d-none">
     <div class="zn-section"><h5 id="form-family-heading">Add family member</h5></div>
 
-    <form id="form-family" method="POST" action="{{ route('family.store') }}">
+    <form id="form-family" data-unsaved-guard method="POST" action="{{ route('family.store') }}">
         @csrf
         <input type="hidden" name="family-id" id="family-id">
 
         <div class="zn-grid">
             <div class="zn-fld zn-col-4">
                 <label for="family-relationship">Relationship <span class="zn-req">*</span></label>
-                <select name="family-relationship" id="family-relationship">
+                <select name="family-relationship" id="family-relationship" required>
                     <option value="">Select</option>
                     <option value="Spouse">Spouse</option>
                     <option value="Mother">Mother</option>
@@ -101,51 +101,51 @@
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="family-firstname">First name <span class="zn-req">*</span></label>
-                <input type="text" name="family-firstname" id="family-firstname">
+                <input type="text" name="family-firstname" id="family-firstname" required maxlength="20">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="family-middlename">Middle name <span class="zn-opt">optional</span></label>
-                <input type="text" name="family-middlename" id="family-middlename">
+                <input type="text" name="family-middlename" id="family-middlename" maxlength="20">
             </div>
             <div class="zn-fld zn-col-4">
                 <label for="family-lastname">Last name <span class="zn-req">*</span></label>
-                <input type="text" name="family-lastname" id="family-lastname">
+                <input type="text" name="family-lastname" id="family-lastname" required maxlength="20">
             </div>
             <div class="zn-fld zn-col-2">
                 <label for="family-suffix">Suffix <span class="zn-opt">optional</span></label>
-                <input type="text" name="family-suffix" id="family-suffix">
+                <input type="text" name="family-suffix" id="family-suffix" maxlength="10">
             </div>
             <div class="zn-fld zn-col-3">
                 <label for="family-maidenname">Maiden name <span class="zn-opt">optional</span></label>
-                <input type="text" name="family-maidenname" id="family-maidenname">
+                <input type="text" name="family-maidenname" id="family-maidenname" maxlength="20">
             </div>
             <div class="zn-fld zn-col-3">
                 <label for="family-sex">Sex <span class="zn-req">*</span></label>
-                <select name="family-sex" id="family-sex">
+                <select name="family-sex" id="family-sex" required>
                     <option value="">Select</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                 </select>
             </div>
             <div class="zn-fld zn-col-3">
-                <label for="family-birthdate">Birth date <span class="zn-opt">optional</span></label>
-                <input type="date" name="family-birthdate" id="family-birthdate">
+                <label for="family-birthdate">Birth date <span class="zn-req">*</span></label>
+                <input type="date" name="family-birthdate" id="family-birthdate" required>
             </div>
             <div class="zn-fld zn-col-3">
-                <label for="family-contact">Contact number <span class="zn-opt">optional</span></label>
-                <input type="text" name="family-contact" id="family-contact">
+                <label for="family-contact">Contact number <span class="zn-req">*</span></label>
+                <input type="text" name="family-contact" id="family-contact" required maxlength="20">
             </div>
             <div class="zn-fld zn-col-3">
                 <label for="family-occupation">Occupation <span class="zn-opt">optional</span></label>
-                <input type="text" name="family-occupation" id="family-occupation">
+                <input type="text" name="family-occupation" id="family-occupation" maxlength="20">
             </div>
             <div class="zn-fld zn-col-6">
                 <label for="family-workplace">Work address <span class="zn-opt">optional</span></label>
                 <input type="text" name="family-workplace" id="family-workplace">
             </div>
             <div class="zn-fld zn-col-6">
-                <label for="family-address">Address <span class="zn-opt">optional</span></label>
-                <input type="text" name="family-address" id="family-address">
+                <label for="family-address">Address <span class="zn-req">*</span></label>
+                <input type="text" name="family-address" id="family-address" required>
             </div>
         </div>
 
@@ -179,18 +179,18 @@
 
     function edit_family(e) {
         document.getElementById('family-id') && (document.getElementById('family-id').value = e.dataset.famid || '');
-        document.getElementById('relationship') && (document.getElementById('relationship').value = e.dataset.relationship || '');
-        document.getElementById('firstname') && (document.getElementById('firstname').value = e.dataset.firstname || '');
-        document.getElementById('middlename') && (document.getElementById('middlename').value = e.dataset.middlename || '');
-        document.getElementById('lastname') && (document.getElementById('lastname').value = e.dataset.lastname || '');
-        document.getElementById('suffix') && (document.getElementById('suffix').value = e.dataset.suffix || '');
-        document.getElementById('maidenname') && (document.getElementById('maidenname').value = e.dataset.maidenname || '');
-        document.getElementById('birthdate') && (document.getElementById('birthdate').value = e.dataset.birthdate || '');
-        document.getElementById('sex') && (document.getElementById('sex').value = e.dataset.sex || '');
-        document.getElementById('contact') && (document.getElementById('contact').value = e.dataset.contact || '');
-        document.getElementById('address') && (document.getElementById('address').value = e.dataset.address || '');
-        document.getElementById('occupation') && (document.getElementById('occupation').value = e.dataset.occupation || '');
-        document.getElementById('workplace') && (document.getElementById('workplace').value = e.dataset.workplace || '');
+        document.getElementById('family-relationship') && (document.getElementById('family-relationship').value = e.dataset.relationship || '');
+        document.getElementById('family-firstname') && (document.getElementById('family-firstname').value = e.dataset.firstname || '');
+        document.getElementById('family-middlename') && (document.getElementById('family-middlename').value = e.dataset.middlename || '');
+        document.getElementById('family-lastname') && (document.getElementById('family-lastname').value = e.dataset.lastname || '');
+        document.getElementById('family-suffix') && (document.getElementById('family-suffix').value = e.dataset.suffix || '');
+        document.getElementById('family-maidenname') && (document.getElementById('family-maidenname').value = e.dataset.maidenname || '');
+        document.getElementById('family-birthdate') && (document.getElementById('family-birthdate').value = e.dataset.birthdate || '');
+        document.getElementById('family-sex') && (document.getElementById('family-sex').value = e.dataset.sex || '');
+        document.getElementById('family-contact') && (document.getElementById('family-contact').value = e.dataset.contact || '');
+        document.getElementById('family-address') && (document.getElementById('family-address').value = e.dataset.address || '');
+        document.getElementById('family-occupation') && (document.getElementById('family-occupation').value = e.dataset.occupation || '');
+        document.getElementById('family-workplace') && (document.getElementById('family-workplace').value = e.dataset.workplace || '');
         show_family_form('Edit family member');
     }
 

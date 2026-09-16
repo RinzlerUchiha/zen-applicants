@@ -13,46 +13,55 @@
     <a class="zn-link" href="{{ route('careers.index') }}">&larr; All positions</a>
 </p>
 
-<div class="zn-jd-head">
-    <h1>{{ $posting->posting_title }}</h1>
+{{-- Read the job, then apply. The posting is the page; the apply bar follows
+     it, and there is no process explainer in between. --}}
+<article class="zn-jd">
+    <header class="zn-jd-head">
+        <h1>{{ $posting->posting_title }}</h1>
+        @if ($posted)
+            <div class="zn-job-tags" style="margin-bottom:0">
+                <span class="zn-pill zn-pill-opt">Posted {{ $posted->format('M j, Y') }}</span>
+            </div>
+        @endif
+    </header>
 
-    @if ($posted)
-        <div class="zn-job-tags" style="margin-bottom:12px">
-            <span class="zn-pill zn-pill-opt">Posted {{ $posted->format('M j, Y') }}</span>
+    @if ($ad !== '')
+        <div class="zn-jd-body">{{ $ad }}</div>
+    @else
+        <div class="zn-empty">
+            <b>No description available</b>
+            This posting has no published details yet. Please check back, or contact HR.
         </div>
     @endif
 
-    <div class="d-flex gap-2 align-items-center flex-wrap">
-        @auth
-            <form method="POST" action="{{ route('careers.apply', $posting->id) }}" class="m-0">
-                @csrf
-                <button type="submit" class="zn-btn">Apply for this position</button>
-            </form>
-            <span class="zn-count">Your saved profile will be used</span>
-        @else
-            <a class="zn-btn" href="{{ route('register', ['job' => $posting->id]) }}">Apply for this position</a>
-            <span class="zn-count">Already applied before? <a class="zn-link" href="{{ route('login', ['job' => $posting->id]) }}">Sign in</a></span>
-        @endauth
-    </div>
+    {{-- The apply action belongs at the end of the posting. It is sticky: while
+         the posting is on screen it stays pinned to the bottom of the window,
+         and it settles into this place once the reader reaches the end — so it
+         never covers the last of the content. Same flow as before: signed-in
+         applicants submit straight away, visitors carry this job through
+         sign-up or sign-in. --}}
+    <div class="zn-apply-bar">
+        <div class="zn-apply-bar-inner">
+            <div class="zn-apply-bar-text">
+                <b>{{ $posting->posting_title }}</b>
+                @auth
+                    <span>Your saved profile will be used</span>
+                @else
+                    <span>Already applied before?
+                        <a class="zn-link" href="{{ route('login', ['job' => $posting->id]) }}">Sign in</a></span>
+                @endauth
+            </div>
 
-    {{-- What the previous page never said: what happens after you apply.
-         Setting this expectation up front is the cheapest reassurance in the
-         whole flow, and it matches the real process rather than a guess. --}}
-    <div class="zn-whatnext">
-        <div class="zn-wn"><b>1 · Apply</b><span>Create an account and submit.</span></div>
-        <div class="zn-wn"><b>2 · Forms</b><span>Application form, résumé and 2x2 picture.</span></div>
-        <div class="zn-wn"><b>3 · Interview</b><span>HR contacts you to schedule.</span></div>
-        <div class="zn-wn"><b>4 · Assessments</b><span>Provided after your interview.</span></div>
+            @auth
+                <form method="POST" action="{{ route('careers.apply', $posting->id) }}" class="m-0">
+                    @csrf
+                    <button type="submit" class="zn-btn">Apply for this position</button>
+                </form>
+            @else
+                <a class="zn-btn" href="{{ route('register', ['job' => $posting->id]) }}">Apply for this position</a>
+            @endauth
+        </div>
     </div>
-</div>
-
-@if ($ad !== '')
-    <div class="zn-jd-body">{{ $ad }}</div>
-@else
-    <div class="zn-empty">
-        <b>No description available</b>
-        This posting has no published details yet. Please check back, or contact HR.
-    </div>
-@endif
+</article>
 
 @endsection

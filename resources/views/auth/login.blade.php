@@ -8,13 +8,10 @@
 
         <aside class="zn-auth-aside">
             <img src="https://teamtngc.com/zen/assets/img/coffi.png" alt="">
+            {{-- A welcome, not a checklist: what is left to do is shown on Home
+                 after signing in, from the applicant's real progress. --}}
             <h2>Welcome back</h2>
-            <p>Pick up where you left off — your progress is saved automatically.</p>
-            <ul class="zn-auth-steps">
-                <li class="zn-auth-step"><i>&check;</i><span>Check where your application stands</span></li>
-                <li class="zn-auth-step"><i>&check;</i><span>Finish your application form</span></li>
-                <li class="zn-auth-step"><i>&check;</i><span>Send any remaining documents</span></li>
-            </ul>
+            <p>Sign in to follow your application and pick up where you left off.</p>
         </aside>
 
         <div class="zn-auth-form">
