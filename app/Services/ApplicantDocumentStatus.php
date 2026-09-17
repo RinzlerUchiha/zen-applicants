@@ -23,16 +23,23 @@ class ApplicantDocumentStatus
     }
 
     /**
-     * The document-completion run the applicant is in, if any: the active one,
-     * otherwise the outcome they ended on. Read-only here — HR starts and ends
-     * it, and the only thing the applicant can do is withdraw.
+     * The document deadlines currently running — one per application HR has
+     * started a process for — soonest first, each with the posting it is for.
+     *
+     * Only active ones. How an application ended is shown on My Applications,
+     * where the application is; the Documents page is about what to send.
      */
-    public static function process(int $appId): ?DocumentProcess
+    public static function activeProcesses(int $appId): Collection
     {
-        return DocumentProcess::where('app_id', $appId)
-            ->orderByRaw("status = '" . DocumentProcess::ACTIVE . "' DESC")
-            ->latest('id')
-            ->first();
+        return DocumentProcess::with('application')
+            ->where('app_id', $appId)
+            ->active()
+            ->orderBy('deadline_at')
+            ->get()
+            ->each(fn ($process) => $process->setAttribute(
+                'posting_title',
+                $process->application?->jobPosting()?->posting_title
+            ));
     }
 
     /**

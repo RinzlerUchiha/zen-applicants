@@ -21,9 +21,11 @@
 
         <p class="zn-page-title">{{ $greeting }}, {{ auth()->user()->app_fname ?: 'there' }}</p>
         <p class="zn-page-sub">
-            @if ($applications->count())
-                You're being considered for {{ $applications->count() }}
-                {{ Str::plural('position', $applications->count()) }}.
+            @if ($openApplications->count())
+                You're being considered for {{ $openApplications->count() }}
+                {{ Str::plural('position', $openApplications->count()) }}.
+            @elseif ($applications->count())
+                You don't have an open application right now.
             @else
                 You haven't applied to a position yet.
             @endif
@@ -115,7 +117,7 @@
                                 <span class="zn-count" style="font-weight:400">
                                     Applied {{ $application->applied_at?->format('F j, Y') }}
                                 </span>
-                                <span class="zn-pill zn-pill-acc">{{ $application->status }}</span>
+                                <span class="zn-pill {{ $application->pill_class }}">{{ $application->display_label }}</span>
                             </div>
                         </div>
                     @empty

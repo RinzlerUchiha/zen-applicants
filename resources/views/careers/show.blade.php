@@ -45,7 +45,12 @@
             <div class="zn-apply-bar-text">
                 <b>{{ $posting->posting_title }}</b>
                 @auth
-                    <span>Your saved profile will be used</span>
+                    @if ($reapplyOn)
+                        <span>You can apply for this position again on {{ $reapplyOn->format('F j, Y') }}.
+                            Other positions are open to you now.</span>
+                    @else
+                        <span>Your saved profile will be used</span>
+                    @endif
                 @else
                     <span>Already applied before?
                         <a class="zn-link" href="{{ route('login', ['job' => $posting->id]) }}">Sign in</a></span>
@@ -53,10 +58,14 @@
             </div>
 
             @auth
-                <form method="POST" action="{{ route('careers.apply', $posting->id) }}" class="m-0">
-                    @csrf
-                    <button type="submit" class="zn-btn">Apply for this position</button>
-                </form>
+                @if ($reapplyOn)
+                    <a class="zn-btn zn-btn-out" href="{{ route('careers.index') }}">See other positions</a>
+                @else
+                    <form method="POST" action="{{ route('careers.apply', $posting->id) }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="zn-btn">Apply for this position</button>
+                    </form>
+                @endif
             @else
                 <a class="zn-btn" href="{{ route('register', ['job' => $posting->id]) }}">Apply for this position</a>
             @endauth

@@ -65,7 +65,11 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    // Matches zen-admin and the database server (both UTC+8). The two apps
+    // write to the same tables, and document deadlines, closure dates and
+    // re-application cooldowns are compared across them (HireFlow 2.5 M3).
+    // Timestamps written before this change were left as they were.
+    'timezone' => 'Asia/Manila',
 
     /*
     |--------------------------------------------------------------------------

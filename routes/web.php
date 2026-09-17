@@ -56,6 +56,9 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
 
     Route::post('/careers/{id}/apply', [JobListingController::class, 'apply'])->name('careers.apply');
     Route::get('/applications', [ApplicationController::class, 'index'])->name('applications.index');
+    // Withdraws ONE application. Found only among the signed-in applicant's own.
+    Route::post('/applications/{application}/withdraw', [ApplicationController::class, 'withdraw'])
+        ->whereNumber('application')->name('applications.withdraw');
 
     Route::get('/profile/personal', [UserController::class, 'show'])->name('personal.show');
     Route::post('/profile/personal', [UserController::class, 'store'])->name('personal.store')->middleware('continueAfterSave');
@@ -74,7 +77,6 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
 
     Route::get('/profile/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/profile/documents', [DocumentController::class, 'store'])->name('documents.store');
-    Route::post('/profile/documents/withdraw', [DocumentController::class, 'withdraw'])->name('documents.withdraw');
     // No delete: an applicant replaces a document by uploading a new one, which
     // sends it back to HR to check.
     Route::get('/profile/documents/{id}/view', [DocumentController::class, 'view'])->name('documents.view');

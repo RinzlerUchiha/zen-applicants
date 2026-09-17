@@ -12,61 +12,29 @@
     have already sent replaces it.
 </p>
 
-{{-- The run HR has started, if there is one: one deadline and one allowance for
-     everything asked for, not one per document. Shown before the documents,
-     because it is the thing with a clock on it. --}}
-@if ($process)
-    @if ($process->is_active)
-        <div class="zn-deadline">
-            <div class="zn-deadline-main">
-                <b>
-                    @if ($process->days_left === 0)
-                        Due today
-                    @else
-                        {{ $process->days_left }} {{ Str::plural('day', $process->days_left) }} left
-                    @endif
-                </b>
-                <span>
-                    Send everything below by <b>{{ $process->deadline_at->format('F j, Y') }}</b>.
-                    This one date covers every document we have asked for.
-                    @if ($process->attempts_left <= 1)
-                        You have <b>{{ $process->attempts_left }}</b> replacement
-                        {{ Str::plural('attempt', $process->attempts_left) }} left.
-                    @endif
-                </span>
-            </div>
-            <button type="button" class="zn-link zn-deadline-out" data-bs-toggle="modal" data-bs-target="#withdrawModal">
-                Withdraw
-            </button>
+{{-- Document deadlines: one for each application HR has started a document
+     process for. The documents themselves are shared by every application, so
+     they are listed once, below. --}}
+@foreach ($processes as $process)
+    <div class="zn-deadline">
+        <div class="zn-deadline-main">
+            <b>
+                @if ($process->days_left === 0)
+                    Due today
+                @else
+                    {{ $process->days_left }} {{ Str::plural('day', $process->days_left) }} left
+                @endif
+                @if ($process->posting_title)
+                    · {{ $process->posting_title }}
+                @endif
+            </b>
+            <span>
+                For your application{{ $process->posting_title ? ' for ' . $process->posting_title : '' }}, send what we've
+                asked for by <b>{{ $process->deadline_at->format('F j, Y') }}</b>.
+            </span>
         </div>
-    @else
-        <div class="zn-toast {{ $process->status === 'complete' ? '' : 'error' }}">
-            <i class="bi {{ $process->status === 'complete' ? 'bi-check-circle-fill' : 'bi-info-circle-fill' }}"></i>
-            <div>
-                <b>{{ $process->status_label }}</b>
-                <span>
-                    @switch($process->status)
-                        @case('complete')
-                            Everything we asked for has been accepted. We will be in touch about the next step.
-                            @break
-                        @case('non_responsive')
-                            The deadline passed before we received everything. Your details stay on file,
-                            and we may consider you for other openings.
-                            @break
-                        @case('requirements_not_met')
-                            We were not able to accept the documents within the attempts allowed. Your details
-                            stay on file, and we may consider you for other openings.
-                            @break
-                        @case('withdrawn')
-                            You withdrew from this process. Your details stay on file, and you are welcome
-                            to apply again.
-                            @break
-                    @endswitch
-                </span>
-            </div>
-        </div>
-    @endif
-@endif
+    </div>
+@endforeach
 
 {{-- What HR is waiting on, first. Everything here is also shown against the
      document itself below; this is the summary so it cannot be missed. --}}
@@ -108,38 +76,6 @@
     @endforeach
 </div>
 
-{{-- Withdrawing is deliberate and is confirmed, because it ends the process.
-     Nothing is deleted: the details stay on file. --}}
-@if ($process?->is_active)
-    <div class="modal fade" id="withdrawModal" tabindex="-1" aria-labelledby="withdrawModalTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <form class="modal-content zn-modal" method="POST" action="{{ route('documents.withdraw') }}">
-                @csrf
-                <div class="modal-header">
-                    <h1 class="modal-title" id="withdrawModalTitle">Withdraw from this process?</h1>
-                </div>
-                <div class="modal-body">
-                    <p class="zn-modal-lede" style="margin-bottom:10px">
-                        We will stop asking you for these documents and close this process. Your profile and
-                        everything you have already sent stay on file, and you can apply again later.
-                    </p>
-                    <div class="zn-fld">
-                        <label for="withdraw-note">Anything you would like us to know <span class="zn-opt">optional</span></label>
-                        <input type="text" name="note" id="withdraw-note" maxlength="500">
-                    </div>
-                    <label class="zn-check">
-                        <input type="checkbox" name="confirm" value="1" required>
-                        <span>Yes, I want to withdraw.</span>
-                    </label>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="zn-btn zn-btn-out zn-btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="zn-btn zn-btn-sm zn-btn-warn">Withdraw</button>
-                </div>
-            </form>
-        </div>
-    </div>
-@endif
 
 @endsection
 

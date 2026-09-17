@@ -42,7 +42,10 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     {{-- The design system. Loaded last so it wins over Bootstrap. --}}
-    <link rel="stylesheet" href="{{ asset('main.css') }}?v=2">
+    {{-- Versioned by the file's own modification time, so a stylesheet change
+         reaches browsers that cached an earlier copy. A fixed ?v= number kept
+         serving stale CSS until someone remembered to bump it. --}}
+    <link rel="stylesheet" href="{{ asset('main.css') }}?v={{ @filemtime(public_path('main.css')) ?: 2 }}">
 
     @stack('head')
 </head>

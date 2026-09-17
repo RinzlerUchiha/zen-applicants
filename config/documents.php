@@ -105,44 +105,30 @@ return [
     'max_size_kb' => 5120,
 
     /*
-    | The document-completion process (Milestone 3): one run at getting an
-    | applicant's outstanding documents in, with one deadline and one attempt
-    | counter shared by every request in it.
+    | The document process (Milestone 3): ONE application's document gate — a
+    | deadline for the requests HR attaches to it, and an outcome. The documents
+    | and requests stay with the applicant and count for every application.
     |
-    | These are defaults. HR sets the period and the attempt limit when starting
-    | a run, and the values chosen are copied onto that run — so changing a
-    | default here never moves a deadline an applicant has already been given.
+    | There is no attempt counter: a rejection reopens the request and costs
+    | nothing. HR sets the deadline when starting a process, and what HR chose
+    | is stored on the process, so changing the default never moves a deadline
+    | an applicant has already been given.
+    |
+    | What an APPLICATION's status means (closed, Candidate Pool, cooldown) is
+    | defined once, in config/applications.php — not here.
     */
     'completion' => [
 
         /* Calendar days. Weekends count; Philippine public holidays do not. */
         'deadline_days' => 7,
 
-        /* Rejections allowed across the whole run, not per document. */
-        'max_attempts' => 3,
-
-        /* How a run can end, in the applicant's own words. The last four are
-           terminal and final. */
+        /* tblapp_document_processes.status, in the applicant's own words. */
         'statuses' => [
-            'active'               => 'Waiting for your documents',
-            'complete'             => 'Documents complete',
-            'non_responsive'       => 'No response before the deadline',
-            'requirements_not_met' => 'Document requirements not met',
-            'withdrawn'            => 'Withdrawn',
-        ],
-
-        /*
-        | What the outcome is written as in tblapp_applications.status. Kept
-        | apart from the applicant-facing wording above, and identical to the
-        | same map in zen-admin/config/applicant_documents.php: whichever app
-        | closes a run, the application ends up saying the same thing. Values
-        | are stored, so changing one orphans existing rows.
-        */
-        'application_status' => [
-            'complete'             => 'Documents Complete',
-            'non_responsive'       => 'Non-Responsive',
-            'requirements_not_met' => 'Document Requirements Not Met',
-            'withdrawn'            => 'Withdrawn',
+            'active'         => 'Waiting for your documents',
+            'complete'       => 'Documents complete',
+            'non_responsive' => 'No response before the deadline',
+            'withdrawn'      => 'Withdrawn',
+            'not_selected'   => 'Not selected',
         ],
     ],
 

@@ -54,6 +54,9 @@ class HomeController extends Controller
             'docsRequired'  => $requiredDocs->count(),
             'docsAttention' => $docsAttention,
             'applications'  => $applications,
+            // Only open applications are "being considered". Closed ones are
+            // still listed, with what happened to them.
+            'openApplications' => $applications->reject(fn ($application) => $application->is_closed)->values(),
         ]);
     }
 }

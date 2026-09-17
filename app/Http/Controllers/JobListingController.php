@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\JobApplicationService;
+use App\Services\ReapplicationPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -51,7 +52,14 @@ class JobListingController extends Controller
             abort(404, 'This job posting is not available.');
         }
 
-        return view('careers.show', compact('posting'));
+        // A signed-in applicant still in a cooldown for THIS posting is told when
+        // they can apply again, instead of being offered a button that would be
+        // refused. Other postings are unaffected.
+        $reapplyOn = auth()->check()
+            ? ReapplicationPolicy::blockedUntil(auth()->user()->app_id, (int) $posting->id)
+            : null;
+
+        return view('careers.show', compact('posting', 'reapplyOn'));
     }
 
     public function apply(Request $request, $id)

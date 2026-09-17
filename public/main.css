@@ -59,6 +59,7 @@
   --zn-warn-soft: #fdf0f0;
   --zn-lock:      #8a7e76;
   --zn-lock-soft: #f0edea;
+  --zn-caution:   #9a6200;
 
   --zn-brand: #5d2502;
 
@@ -97,6 +98,7 @@
   --zn-warn-soft: #2e1b19;
   --zn-lock:      #877a72;
   --zn-lock-soft: #251f1b;
+  --zn-caution:   #d9a441;
 
   --zn-brand: #c9a08a;
 
@@ -273,6 +275,7 @@ body { font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; 
 .zn-pill-later { color: var(--zn-lock); }
 .zn-pill-ok    { color: var(--zn-ok); }
 .zn-pill-acc   { color: var(--zn-accent); }
+.zn-pill-caution { color: var(--zn-caution); }
 
 /* ---------- 8. Progress and stage tracker -------------------------------- */
 
@@ -1167,9 +1170,21 @@ fieldset:not(:disabled) .form-control-plaintext.border-bottom,
   border-radius: var(--zn-radius-lg); padding: 13px 15px; margin-bottom: 14px;
 }
 .zn-deadline-main { min-width: 0; flex: 1; }
-.zn-deadline-main b { display: block; font-size: 14px; font-weight: 700; color: var(--zn-ink); }
+/* The heading only (direct child) — a bold date inside the sentence stays inline. */
+.zn-deadline-main > b { display: block; font-size: 14px; font-weight: 700; color: var(--zn-ink); }
 .zn-deadline-main span { display: block; font-size: 12.5px; color: var(--zn-ink-2); margin-top: 2px; }
 .zn-deadline-out { font-size: 12px; flex: none; }
 @media (max-width: 560px) {
   .zn-deadline { flex-direction: column; }
 }
+
+/* ---------- 33. My Applications · withdrawing one application -------------
+   HireFlow 2.5 · M3. The withdraw action is a quiet link under an OPEN card —
+   never a button competing with the application itself. A closed card reads
+   as finished: its tracker stops and its note explains which of the three
+   endings it was (withdrawn, no response by the deadline, not selected). */
+
+.zn-application-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.zn-withdraw-link { font-size: 12px; color: var(--zn-ink-3); }
+.zn-withdraw-link:hover { color: var(--zn-warn); }
+.zn-application.is-closed .zn-track { opacity: .55; }
