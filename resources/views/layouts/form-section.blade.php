@@ -28,61 +28,7 @@
 @section('body')
 <div class="zn-form-shell">
 
-    <aside class="zn-form-rail" aria-label="Application form sections">
-        {{-- On a phone the list collapses behind this summary, so the section
-             being filled in is the first thing on screen. --}}
-        <button type="button" class="zn-form-rail-toggle" aria-expanded="false" aria-controls="zn-form-rail-body">
-            <span>
-                <b>Application Form</b>
-                <span>Section {{ $index !== false ? $index + 1 : '—' }} of {{ $keys->count() }} · {{ $formPercent ?? 0 }}% complete</span>
-            </span>
-            <i class="bi bi-chevron-down" aria-hidden="true"></i>
-        </button>
-
-        <div class="zn-form-rail-body" id="zn-form-rail-body">
-            <div class="zn-form-rail-progress">
-                <div class="t"><span>Application Form</span><b>{{ $formPercent ?? 0 }}%</b></div>
-                <div class="zn-bar"><i style="width: {{ $formPercent ?? 0 }}%"></i></div>
-                <span>{{ $formCounts['done'] ?? 0 }} of {{ $formCounts['total'] ?? 4 }} required sections complete</span>
-            </div>
-
-            <ol class="zn-form-rail-list">
-                @foreach ($sections as $key => $section)
-                    @php
-                        // An optional section with nothing in it counts as "complete"
-                        // for the application, but it has not been done — so it is
-                        // only ticked once it has at least one entry.
-                        $done = $section['complete'] && ($section['blocking'] || ($section['rows'] ?? 0) > 0);
-                        $state = $done ? 'done' : ($section['started'] ? 'part' : 'todo');
-                        $stateText = ['done' => 'Complete', 'part' => 'In progress', 'todo' => 'Not started'][$state];
-                    @endphp
-                    <li>
-                        <a class="zn-form-rail-item {{ $state }} {{ $key === $currentKey ? 'active' : '' }}"
-                           href="{{ Route::has($section['route']) ? route($section['route']) : '#' }}"
-                           @if ($key === $currentKey) aria-current="step" @endif>
-                            <span class="zn-form-rail-mark" aria-hidden="true">
-                                @if ($done)
-                                    <i class="bi bi-check-lg"></i>
-                                @else
-                                    {{ $loop->iteration }}
-                                @endif
-                            </span>
-                            <span class="zn-form-rail-label">
-                                {{ $section['label'] }}
-                                @unless ($section['blocking'])
-                                    <em>Optional</em>
-                                @endunless
-                            </span>
-                            <span class="visually-hidden">— {{ $stateText }}</span>
-                            @if (!$section['complete'] && $section['blocking'] && count($section['missing']))
-                                <span class="zn-form-rail-count" title="{{ count($section['missing']) }} still needed">{{ count($section['missing']) }}</span>
-                            @endif
-                        </a>
-                    </li>
-                @endforeach
-            </ol>
-        </div>
-    </aside>
+    @include('layouts.partials.form-rail')
 
     <main class="zn-form-main">
         @if (session('success'))
@@ -159,17 +105,3 @@
 
 @include('layouts.partials.unsaved-changes')
 @endsection
-
-@push('scripts')
-<script>
-    (function () {
-        const toggle = document.querySelector('.zn-form-rail-toggle');
-        const rail = document.querySelector('.zn-form-rail');
-        if (!toggle) return;
-        toggle.addEventListener('click', function () {
-            const open = rail.classList.toggle('is-open');
-            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-    })();
-</script>
-@endpush

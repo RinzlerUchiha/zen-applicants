@@ -1,15 +1,18 @@
 {{--
-    Single-column work-area shell (the Documents page).
+    The Screening pages: Documents and Assessments.
 
-    The Application Form sections do not use this: layouts.form-section has its
-    own sidebar for the form's eight sections. Documents and Assessments are
-    their own destinations, reached from the header, so they have no sidebar.
+    Same shell as the Application Form (layouts.form-section) so the applicant
+    keeps one sidebar everywhere — the form's eight sections, and Screening
+    below them. The page itself is a single column, as before.
 --}}
 @extends('layouts.app')
 
 @section('body')
-    <main class="zn-canvas">
-        <div class="zn-narrow">
+<div class="zn-form-shell">
+    @include('layouts.partials.form-rail')
+
+    <main class="zn-form-main">
+        <div class="zn-screening-page">
             @if (session('success'))
                 <div class="zn-toast"><i class="bi bi-check-circle-fill"></i> {{ session('success') }}</div>
             @endif
@@ -26,4 +29,5 @@
             @yield('content')
         </div>
     </main>
+</div>
 @endsection

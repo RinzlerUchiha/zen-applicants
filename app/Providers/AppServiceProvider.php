@@ -27,7 +27,10 @@ class AppServiceProvider extends ServiceProvider
         // of the concern — none of them had to be edited for the redesign.
         // Only the Application Form chrome reads it (progress and the stepper).
         // layouts.layout no longer has a rail, so Documents does not pay for it.
-        View::composer(['layouts.form-section'], function ($view) {
+        // Bound to the sidebar partial itself, so every page that includes it
+        // — the Application Form sections, Documents, Assessments — gets the
+        // same data (HireFlow 2.5 · M3).
+        View::composer(['layouts.partials.form-rail', 'layouts.form-section'], function ($view) {
             if (!Auth::check()) {
                 return;
             }

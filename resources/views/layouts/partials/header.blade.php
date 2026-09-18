@@ -18,9 +18,8 @@
             <a href="{{ route('home') }}" class="{{ request()->routeIs('home', 'applications.*') ? 'active' : '' }}">Home</a>
             <a href="{{ route('personal.show') }}"
                class="{{ request()->routeIs('personal.*', 'family.*', 'education.*', 'employment.*', 'skill.*', 'license.*', 'certificate.*', 'characterref.*') ? 'active' : '' }}">Application Form</a>
-            <a href="{{ route('documents.index') }}" class="{{ request()->routeIs('documents.*') ? 'active' : '' }}">Documents</a>
-            <a href="{{ route('assessments.index') }}"
-               class="{{ request()->routeIs('assessments.*', 'enneagram.*', 'tapt.*', 'disc.*', 'miq.*', 'color.*', 'vak.*', 'why_i_work.*', 'career_anchors.*', 'abstract_reasoning.*', 'basic_math.*', 'maya.*') ? 'active' : '' }}">Assessments</a>
+            {{-- Documents and Assessments are Screening, not header items: they
+                 are reached from the sidebar's Screening group. --}}
             <a href="{{ route('careers.index') }}" class="{{ request()->routeIs('careers.*') ? 'active' : '' }}">Open positions</a>
         </nav>
 

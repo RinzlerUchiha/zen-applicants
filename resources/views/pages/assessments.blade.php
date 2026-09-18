@@ -1,10 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.layout')
 
 @section('title', 'Assessments')
 
-@section('body')
-<main class="zn-canvas">
-    <div class="zn-narrow">
+@section('content')
 
         <p class="zn-page-title">Assessments</p>
         <p class="zn-page-sub">
@@ -49,6 +47,4 @@
             @endforeach
         </div>
 
-    </div>
-</main>
 @endsection

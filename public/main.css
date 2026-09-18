@@ -184,7 +184,11 @@ body { font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; 
 /* ---------- 4. App shell ------------------------------------------------- */
 
 .zn-topbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  /* Wraps rather than overflowing: on a narrow phone the nav drops to its own
+     row instead of pushing the page wider than the screen. min-width on the
+     nav lets it wrap too, since a flex item will not shrink below its content
+     otherwise. */
+  display: flex; align-items: center; justify-content: space-between; gap: 16px 12px; flex-wrap: wrap;
   padding: 10px 22px;
   background: var(--zn-surface);
   border-bottom: 1px solid var(--zn-line);
@@ -203,7 +207,10 @@ body { font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; 
 .zn-brand img { height: 26px; width: auto; flex: none; object-fit: contain; }
 .zn-brand em { font-style: normal; color: var(--zn-ink-3); font-weight: 500; }
 
-.zn-topnav { display: flex; gap: 2px; align-items: center; list-style: none; margin: 0; padding: 0; }
+.zn-topnav {
+  display: flex; gap: 2px; align-items: center; list-style: none; margin: 0; padding: 0;
+  flex-wrap: wrap; min-width: 0;
+}
 .zn-topnav a {
   font-size: 13px; font-weight: 600; color: var(--zn-ink-2); text-decoration: none;
   padding: 6px 13px; border-radius: var(--zn-radius); display: inline-block;
@@ -507,6 +514,11 @@ fieldset:not(:disabled) .form-control-plaintext.border-bottom,
 @media (max-width: 560px) {
   .zn-canvas { padding: 16px 14px; }
   .zn-topbar { padding: 10px 14px; }
+
+  /* The brand and the account button stay on the first row; the nav takes the
+     full width of the second and its links share it evenly. */
+  .zn-topnav { order: 3; width: 100%; justify-content: space-between; gap: 2px; }
+  .zn-topnav a { padding: 6px 8px; font-size: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -997,10 +1009,12 @@ fieldset:not(:disabled) .form-control-plaintext.border-bottom,
 .zn-doc-review b { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--zn-warn); }
 .zn-doc-review-note { color: var(--zn-ink); font-style: italic; }
 
-/* ---------- 28. Application Form sidebar ---------------------------------
-   The form's own navigation: all eight sections in order with their state,
-   and the form's overall progress. It exists only on Application Form pages —
-   Documents and Assessments are reached from the header. */
+/* ---------- 28. Applicant sidebar ----------------------------------------
+   Two groups: the Application Form's eight sections in order with their state
+   and the form's overall progress, then Screening — Documents and Assessments.
+   Screening items are separate areas, not sections 9 and 10: they carry an
+   icon rather than a number and count towards nothing above. Shown on the
+   Application Form, Documents and Assessments alike. */
 
 .zn-form-shell {
   display: grid; grid-template-columns: 258px minmax(0, 1fr); align-items: start;
@@ -1051,6 +1065,20 @@ fieldset:not(:disabled) .form-control-plaintext.border-bottom,
 }
 
 .zn-form-main { padding: 22px 30px 40px; max-width: 980px; }
+
+/* Screening: a separate group, told apart by a heading and a rule above it. */
+.zn-form-rail-group {
+  margin: 16px 0 6px; padding-top: 14px; border-top: 1px solid var(--zn-line);
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--zn-ink-3);
+}
+.zn-form-rail-screening .zn-form-rail-mark {
+  background: transparent; border-color: transparent; color: var(--zn-ink-3); font-size: 13px;
+}
+.zn-form-rail-screening .zn-form-rail-item.active .zn-form-rail-mark { color: var(--zn-accent); }
+
+/* Documents and Assessments keep their single-column width inside the shell. */
+.zn-screening-page { max-width: 680px; }
 .zn-form-head { margin-bottom: 14px; }
 .zn-form-head .zn-page-title { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 0; }
 
