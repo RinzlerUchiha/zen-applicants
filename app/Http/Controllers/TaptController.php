@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tapt;
+use App\Rules\KnownKeys;
+use App\Services\AssessmentAttempts;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -10,27 +12,49 @@ class TaptController extends Controller
 {
     public static function show()
     {
-        $answer = auth()->user()->tapt;
-        if($answer?->tapt_ans){
+        $attempts = app(AssessmentAttempts::class);
+        $exam = $attempts->view(auth()->user(), 'tapt', claim: true);
+
+        $answer = $exam->hasResult ? auth()->user()->tapt : null;
+        if ($answer?->tapt_ans) {
             $answer->tapt_ans = json_decode($answer->tapt_ans, true);
         }
+        // Saved answers once finished; the autosaved draft while running.
+        $prefill = $answer ? ($answer->tapt_ans ?? []) : ($exam->attempt?->draft['set'] ?? []);
+
+        $list = Tapt::showAnswerList();
+
         return view('pages.tapt', [
-            'answerList' => Tapt::showAnswerList(),
-            'answer' => $answer
+            'answerList' => $list,
+            'answer' => $answer,
+            'prefill' => $prefill,
+            'exam' => $exam,
         ]);
     }
 
+    /**
+     * Submit — only while this applicant's attempt may still be written
+     * (App\Services\AssessmentAttempts). The saving itself is save(), unchanged.
+     */
     public static function store(Request $request)
+    {
+        return app(AssessmentAttempts::class)->submit(auth()->user(), 'tapt', $request, fn (Request $r) => self::save($r));
+    }
+
+    /** Validate and store the answers (also used for the time-up submission). */
+    public static function save(Request $request)
     {
         try {
 
+            $list = Tapt::showAnswerList();
+
             $validated = $request->validate([
-                    'set' => 'required|array',
-                    'set.e_i' => 'required|array',
-                    'set.s_n' => 'required|array',
-                    'set.t_f' => 'required|array',
-                    'set.j_p' => 'required|array',
-                    'set.*.*' => 'required|string',
+                    'set' => ['required', 'array', new KnownKeys(array_keys($list), complete: true)],
+                    'set.e_i' => ['required', 'array', new KnownKeys(array_keys($list['e_i']), complete: true)],
+                    'set.s_n' => ['required', 'array', new KnownKeys(array_keys($list['s_n']), complete: true)],
+                    'set.t_f' => ['required', 'array', new KnownKeys(array_keys($list['t_f']), complete: true)],
+                    'set.j_p' => ['required', 'array', new KnownKeys(array_keys($list['j_p']), complete: true)],
+                    'set.*.*' => 'required|string|in:e,i,s,n,t,f,j,p',
                 ],
                 [
                     'set.required' => 'Please fill up each set',

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\WhyIWork;
+use App\Rules\KnownKeys;
+use App\Services\AssessmentAttempts;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -10,20 +12,43 @@ class WhyIWorkController extends Controller
 {
     public static function show()
     {
-        $answer = auth()->user()->whyIWork;
+        $attempts = app(AssessmentAttempts::class);
+        $exam = $attempts->view(auth()->user(), 'why_i_work', claim: true);
+
+        $answer = $exam->hasResult ? auth()->user()->whyIWork : null;
+        // Saved answers once finished; the autosaved draft while running.
+        $prefill = $answer ? collect(range(1, 12))->mapWithKeys(fn ($i) => [$i => $answer->{'outcome_' . $i}])->all() : ($exam->attempt?->draft['set'] ?? []);
+
+        $list = WhyIWork::showAnswerList();
+
         return view('pages.why-i-work', [
-            'answerList' => WhyIWork::showAnswerList(),
-            'answer' => $answer
+            'answerList' => $list,
+            'answer' => $answer,
+            'prefill' => $prefill,
+            'exam' => $exam,
         ]);
     }
 
+    /**
+     * Submit — only while this applicant's attempt may still be written
+     * (App\Services\AssessmentAttempts). The saving itself is save(), unchanged.
+     */
     public static function store(Request $request)
+    {
+        return app(AssessmentAttempts::class)->submit(auth()->user(), 'why_i_work', $request, fn (Request $r) => self::save($r));
+    }
+
+    /** Validate and store the answers (also used for the time-up submission). */
+    public static function save(Request $request)
     {
         try {
 
+            $list = WhyIWork::showAnswerList();
+
             $validated = $request->validate([
-                    'set' => 'required|array',
-                    // 'set.*' => 'required|array',
+                    // Twelve outcomes ranked 1 to 12, each rank used once.
+                    'set' => ['required', 'array', new KnownKeys(array_keys($list), complete: true),
+                        fn ($attribute, $value, $fail) => is_array($value) && collect($value)->map(fn ($v) => (int) $v)->sort()->values()->all() === range(1, count($list)) ? null : $fail('Please fill up each set')],
                     'set.*' => 'required|integer',
                 ],
                 [

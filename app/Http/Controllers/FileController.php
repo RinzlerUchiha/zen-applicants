@@ -15,8 +15,8 @@ class FileController extends Controller
             'license' => 'applicant/licenses',
             'certificate' => 'applicant/certificates',
             'contract' => 'applicant/contracts',
-            'basic-abstract-reasoning' => 'applicant/basic-abstract-reasoning',
-            'maya-test' => 'applicant/maya-test',
+            // The assessment question images are served only during a running
+            // attempt, by AssessmentController::image().
         ];
 
         // Path inside storage

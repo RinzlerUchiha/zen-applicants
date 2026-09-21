@@ -162,10 +162,9 @@
                             <div class="zn-task-pct">{{ $percent }}%</div>
                         </a>
 
-                        {{-- Not "Locked": nothing locks them yet (that gate is a
-                             later milestone), and the link opens. This says when
-                             they happen in the process; the Assessments page
-                             carries the full explanation. --}}
+                        {{-- They open with an access code HR gives after the
+                             initial interview; this says when they happen in the
+                             process, and the Assessments page takes the code. --}}
                         <a class="zn-task" href="{{ route('assessments.index') }}">
                             <div class="zn-task-ico"><i class="bi bi-ui-checks"></i></div>
                             <div>

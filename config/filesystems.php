@@ -92,6 +92,13 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            // The folder inside the bucket, as zen-admin's s3 disk has it
+            // (AWS_FOLDER="zenhub"): applicant files live under
+            // zenhub/applicant/... and zen-admin already serves them from there.
+            // Unset, nothing changes.
+            'root' => env('AWS_FOLDER', ''),
+            // S3 keys always use "/", whatever the host OS.
+            'directory_separator' => '/',
             'throw' => false,
             'report' => false,
         ],

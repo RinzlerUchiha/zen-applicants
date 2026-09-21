@@ -2,55 +2,113 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
+use App\Services\AssessmentAttempts;
+use App\Services\AssessmentGate;
+use App\Services\FileService;
+use Illuminate\Http\Request;
 
 /**
- * Index of the eleven assessments.
+ * The assessments page, and what every assessment shares: the HR access code,
+ * starting (or resuming) an attempt, the exam page's check-in, and the question
+ * images of the two picture-based tests.
  *
- * Completion is read directly from each assessment's own table rather than
- * tracked separately, so the list cannot drift out of step with the pages.
- *
- * The gate that decides when these become available is a separate design item
- * (anti-cheating / OTP) and is deliberately not implemented here — this
- * controller neither enforces nor assumes one.
+ * Each assessment keeps its own controller for showing and saving its
+ * questions; App\Services\AssessmentAttempts decides whether it may.
  */
 class AssessmentController extends Controller
 {
-    /** Assessment route => the table that holds a completed answer. */
-    private const TABLES = [
-        'enneagram.show'           => 'tblapp_enneagramtest',
-        'tapt.show'                => 'tblapp_tapt',
-        'disc.show'                => 'tblapp_disc',
-        'miq.show'                 => 'tblapp_miq',
-        'color.show'               => 'tblapp_whatcolorareyou',
-        'vak.show'                 => 'tblapp_vak',
-        'why_i_work.show'          => 'tblapp_whyiwork',
-        'career_anchors.show'      => 'tblapp_careeranchors',
-        'abstract_reasoning.show'  => 'tblapp_basicabstract',
-        'basic_math.show'          => 'tblapp_basicmath',
-        'maya.show'                => 'tblapp_maya',
+    /** Picture-based assessments => their folder under applicant/ in storage. */
+    private const IMAGE_FOLDERS = [
+        'abstract_reasoning' => 'basic-abstract-reasoning',
+        'maya' => 'maya-test',
     ];
+
+    public function __construct(private AssessmentAttempts $attempts, private AssessmentGate $gate)
+    {
+    }
 
     public function index()
     {
-        $appId = auth()->user()->app_id;
+        $user = auth()->user();
 
-        $assessments = collect(config('application_form.assessments.list'))
-            ->map(function ($item) use ($appId) {
-                $table = self::TABLES[$item['route']] ?? null;
+        $assessments = collect(AssessmentAttempts::keys())
+            ->map(function (string $key) use ($user) {
+                $exam = $this->attempts->view($user, $key);
 
-                $item['done'] = $table
-                    ? DB::table($table)->where('app_id', $appId)->exists()
-                    : false;
-
-                return $item;
+                return $exam->definition + [
+                    'key' => $key,
+                    'status' => $exam->status,
+                    'remaining' => $exam->remaining,
+                    'done' => in_array($exam->status, ['submitted', 'timed_out'], true),
+                ];
             })
             ->values()
             ->all();
 
         return view('pages.assessments', [
             'assessments' => $assessments,
-            'completed'   => collect($assessments)->where('done', true)->count(),
+            'completed' => collect($assessments)->where('done', true)->count(),
+            'unlock' => $this->gate->current($user),
         ]);
+    }
+
+    /** The applicant enters HR's access code. */
+    public function access(Request $request)
+    {
+        $request->validate(['code' => 'required|string|max:20'], ['code.required' => 'Enter the access code from HR.']);
+
+        $unlock = $this->gate->redeem(auth()->user(), $request->input('code'));
+
+        return redirect()->to(url()->previous() ?: route('assessments.index'))
+            ->with('success', 'Assessments unlocked until ' . $unlock->unlocked_until->format('g:i A') . '.');
+    }
+
+    /** Start the assessment, resume an interrupted one, or continue it here. */
+    public function start(string $assessment)
+    {
+        $problem = $this->attempts->start(auth()->user(), $assessment);
+        $page = route($this->attempts->definition($assessment)['route']);
+
+        return $problem
+            ? redirect()->to($page)->with('error', $problem)
+            : redirect()->to($page);
+    }
+
+    /** The open exam page checking in: heartbeat and autosave in one. */
+    public function ping(Request $request, string $assessment)
+    {
+        $request->validate([
+            'attempt_token' => 'nullable|string|max:64',
+            'payload' => 'nullable|array',
+        ]);
+
+        $payload = $request->input('payload');
+        if ($payload !== null && strlen(json_encode($payload)) > 65535) {
+            abort(413);
+        }
+
+        return response()->json($this->attempts->ping(
+            auth()->user(), $assessment, $request->input('attempt_token'), $payload
+        ));
+    }
+
+    /**
+     * A question image — only while this applicant's attempt is running in this
+     * browser, so the picture tests cannot be seen before or outside it.
+     * Served from the existing applicant storage (the company bucket in
+     * production) exactly as FileService serves every other applicant file.
+     */
+    public function image(string $assessment, string $file)
+    {
+        abort_unless(isset(self::IMAGE_FOLDERS[$assessment]), 404);
+        abort_unless(preg_match('/^[A-Za-z0-9_-]+\.(png|jpe?g|gif|webp)$/i', $file) === 1, 404);
+
+        $exam = $this->attempts->view(auth()->user(), $assessment);
+        abort_unless($exam->status === 'active', 403);
+
+        $response = FileService::serveFile('applicant/' . self::IMAGE_FOLDERS[$assessment] . '/' . $file);
+        $response->headers->set('Cache-Control', 'private, no-store');
+
+        return $response;
     }
 }

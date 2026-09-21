@@ -25,43 +25,30 @@
 
 @if (!$answer)
 <script>
-    $(function() {
-        $('#form-enneagram').submit(async function (e) {
-            e.preventDefault();
-
-            try {
-                let ans = {};
-                $('.enneagram-ans:checked').each(function(){
-                    if(!ans[$(this).data('set')]){
-                        // ans[$(this).data('set')] = {};
-                        ans[$(this).data('set')] = [];
-                    }
-
-                    // ans[$(this).data('set')][this.value] = $(this).siblings('.form-check-label').text();
-                    ans[$(this).data('set')].push(this.value);
-                });                
-
-                const url = @json(route('enneagram.store'));
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                    },
-                    body: JSON.stringify({ set: ans })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error.join("\n") || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to submit.');
+    // The answers, exactly as Submit has always sent them. The shared exam frame
+    // (public/zn-exam.js) autosaves this and submits it.
+    function enneagramPayload() {
+        let ans = {};
+        $('.enneagram-ans:checked').each(function(){
+            if (!ans[$(this).data('set')]) {
+                ans[$(this).data('set')] = [];
             }
+            ans[$(this).data('set')].push(this.value);
+        });
+        return { set: ans };
+    }
+
+    $(function() {
+        ZnExam.init({
+            payload: enneagramPayload,
+            // A group is answered once at least one statement in it is checked.
+            items: () => ZnExam.each(document.querySelectorAll('#form-enneagram [data-q]'),
+                (el) => document.querySelector('.enneagram-ans[data-set="' + el.dataset.q + '"]:checked')),
+            requireAll: true,
+        });
+        $('#form-enneagram').submit(function (e) {
+            e.preventDefault();
+            ZnExam.submit();
         });
     });
 </script>
@@ -71,10 +58,10 @@
     <fieldset {{ $answer ? 'disabled' : '' }}>
         <div class="text-muted small mb-3">Instructions: Below are sets of statements. Answer each statement as honestly as you can. Check the statement/s that best describes as you have been throughout most of your life (what you are most of the time).</div>
         @foreach ($answerList as $s => $set)
-            <h5 class="text-muted">#{{ $s }}</h5>
+            <h5 class="text-muted" data-q="{{ $s }}">#{{ $s }}</h5>
             @foreach ($set as $i => $item)
             <div class="form-check zn-option">
-                <input class="form-check-input enneagram-ans" type="checkbox" data-set="{{ $s }}" value="{{ $i }}" id="set-{{ $s.'-'.$i }}" {{ in_array($i, ($answer?->enneagram_ans[$s] ?? [])) ? 'checked' : '' }}>
+                <input class="form-check-input enneagram-ans" type="checkbox" data-set="{{ $s }}" value="{{ $i }}" id="set-{{ $s.'-'.$i }}" {{ in_array($i, ($prefill[$s] ?? [])) ? 'checked' : '' }}>
                 <label class="form-check-label" for="set-{{ $s.'-'.$i }}">{{ "($i) $item" }}</label>
             </div>
             @endforeach

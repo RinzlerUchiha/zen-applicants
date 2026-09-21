@@ -56,54 +56,35 @@
 
     @if (!$answer)
         <script>
-            let duration = 30 * 60; // 10 minutes
-            let timeLeft = duration;
-            let timer = null;
+            // Every item is sent, unanswered ones as null. The clock is the
+            // server's (public/zn-exam.js), not this page's.
+            function showMaya(i) {
+                const all = $('#form-maya .maya-item');
+                all.removeClass('active');
+                all.eq(i).addClass('active');
+                $('#btn-prev').prop('disabled', i === 0);
+                $('#btn-next').prop('disabled', i === all.length - 1);
+                $('#btn-submit').toggle(i === all.length - 1);
+            }
+            function mayaPayload() {
+                let ans = {};
+                $('#form-maya .maya-item').each(function() {
+                    ans[$(this).data('item')] = $(this).find('.maya-opt:checked').val() ?? null;
+                });
+                return { set: ans };
+            }
 
             $(function() {
-                $('#form-maya').submit(async function(e) {
-                    e.preventDefault();
-
-                    try {
-                        let ans = {};
-                        $('#form-maya .maya-item').each(function() {
-                            ans[$(this).data('item')] = $(this).find('.maya-opt:checked').val();
-                        });
-
-                        const url = @json(route('maya.store'));
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                            },
-                            body: JSON.stringify({
-                                set: ans
-                            })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert(data.error.join("\n") || 'Unknown error');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Unable to submit.');
-                    }
+                ZnExam.init({
+                    payload: mayaPayload,
+                    items: () => ZnExam.each(document.querySelectorAll('#form-maya .maya-item'), ZnExam.hasChecked),
+                    // One item at a time: the map shows the one chosen.
+                    go: (i) => showMaya(i),
                 });
 
-                $('#btn-start').click(function() {
-                    $(this).hide();
-                    $('#timer, #form-maya').show();
-
-                    if (timer !== null) return; // prevent multiple starts
-
-                    updateTimer(); // show first value immediately
-                    timer = setInterval(updateTimer, 1000);
-
+                $('#form-maya').submit(function(e) {
+                    e.preventDefault();
+                    ZnExam.submit();
                 });
 
                 $('#btn-prev').click(function() {
@@ -128,39 +109,13 @@
                     }
                 });
             });
-
-            function updateTimer() {
-                let minutes = Math.floor(timeLeft / 60);
-                let seconds = timeLeft % 60;
-
-                seconds = seconds < 10 ? '0' + seconds : seconds;
-                $('#timer').text('00:' + (minutes < 10 ? '0' + minutes : minutes) + ':' + seconds);
-
-                if (timeLeft <= 0) {
-                    $('#form-maya').submit();
-                    alert('Time up!');
-                    clearInterval(timer);
-                    timer = null;
-                    $('#timer').text('Time up!');
-                    return;
-                }
-
-                timeLeft--;
-            }
         </script>
     @endif
     <div class="w-100 h-100 position-relative">
-        <button class="zn-btn zn-btn-out position-absolute top-0 start-50 translate-middle-x"
-            style="{{ $answer ? 'display: none;' : '' }}" id="btn-start">Start Timer</button>
         @if (!$answer)
-            <form id="form-maya" class="ms-md-5 mb-5" style="{{ !$answer ? 'display: none;' : '' }}"
-                oncontextmenu="/* return false; */">
+            <form id="form-maya" class="ms-md-5 mb-5" oncontextmenu="return false;">
                 <fieldset {{ $answer ? 'disabled' : '' }}>
-                    <div class="d-flex mb-3">
-                        <div class="border border-3 border-danger text-danger rounded p-1 bg-white" id="timer"
-                            style="display: none;">00:30:00</div>
-                        <div class="text-muted small ms-3 my-auto">Maya (30mins exam)</div>
-                    </div>
+                    <div class="text-muted small mb-3">Maya — choose the piece that completes each pattern. Use Prev and Next to move between items.</div>
                     <div id="maya-list" class="d-flex gap-3" style="width: fit-content;">
                         @if (!$answer)
                             <button class="zn-btn zn-btn-out my-auto" type="button" id="btn-prev"
@@ -173,8 +128,8 @@
                                     data-item="{{ $s . $i }}">
                                     <div class="d-block">
                                         <span class="mx-auto">Set {{ strtoupper($s . '-' . $i) }}</span>
-                                        <img src="{{ $item['question'] }}" class="d-block w-auto mx-auto mb-3"
-                                            alt="...">
+                                        <img src="{{ route('assessments.image', ['maya', basename($item['question'])]) }}" class="d-block w-auto mx-auto mb-3"
+                                            alt="Set {{ strtoupper($s . '-' . $i) }}" draggable="false">
                                     </div>
                                     <div class="d-flex flex-column gap-2 justify-content-center opt-list">
                                         @foreach ($item['options'] as $o)
@@ -182,7 +137,7 @@
                                                 id="opt-{{ $s . '-' . $i . '-' . $o }}" 
                                                 value="{{ $o }}"
                                                 autocomplete="off"
-                                                {{ ($answer?->maya_ans[$s . $i] ?? '') == $o ? 'checked' : '' }}>
+                                                {{ ($prefill[$s . $i] ?? '') == $o ? 'checked' : '' }}>
                                             <label class="zn-btn zn-btn-out"
                                                 for="opt-{{ $s . '-' . $i . '-' . $o }}">{{ $o }}</label>
                                         @endforeach

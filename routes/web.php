@@ -26,6 +26,7 @@ use App\Http\Controllers\TaptController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VakController;
 use App\Http\Controllers\WhyIWorkController;
+use App\Services\AssessmentAttempts;
 use Illuminate\Support\Facades\Route;
 
 // The front door. A visitor gets the landing page; a signed-in applicant is
@@ -99,6 +100,18 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::delete('/work/characterref/{id}', [CharacterRefController::class, 'delete'])->name('characterref.delete');
 
     Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
+
+    // Shared by all eleven assessments: HR's access code, starting/resuming an
+    // attempt, the exam page's check-in (heartbeat + autosave), and the
+    // question images of the picture-based tests. Throttled against guessing.
+    Route::post('/assessments/access', [AssessmentController::class, 'access'])
+        ->middleware('throttle:10,1')->name('assessments.access');
+    Route::post('/assessments/{assessment}/start', [AssessmentController::class, 'start'])
+        ->whereIn('assessment', AssessmentAttempts::keys())->name('assessments.start');
+    Route::post('/assessments/{assessment}/ping', [AssessmentController::class, 'ping'])
+        ->whereIn('assessment', AssessmentAttempts::keys())->name('assessments.ping');
+    Route::get('/assessments/{assessment}/image/{file}', [AssessmentController::class, 'image'])
+        ->whereIn('assessment', AssessmentAttempts::keys())->name('assessments.image');
 
     Route::get('/personality/enneagram', [EnneagramController::class, 'show'])->name('enneagram.show');
     Route::post('/personality/enneagram', [EnneagramController::class, 'store'])->name('enneagram.store');

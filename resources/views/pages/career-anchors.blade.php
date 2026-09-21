@@ -22,6 +22,23 @@
     @if (!$answer)
         <script>
             let target;
+
+            // The answers, exactly as Submit has always sent them: the three
+            // items marked highest carry +4.
+            function careerPayload() {
+                let ans = {};
+                let highest = {};
+                $('tr[data-item]').each(function(){
+                    const value = parseInt($(this).find('.item-rate').val());
+                    ans[$(this).data('item')] = Number.isNaN(value) ? null : value;
+                    if ($(this).find('.chk-highest').is(':checked') && !Number.isNaN(value)) {
+                        highest[$(this).data('item')] = value + 4;
+                        ans[$(this).data('item')] += 4;
+                    }
+                });
+                return { set: ans, highest: highest };
+            }
+
             $(function() {
                 $('#tbl-career-anchors input.item-rate').on('input', function(){
                     $('.chk-highest').hide();
@@ -58,45 +75,17 @@
                     }
                 });
                 
-                $('#form-career-anchors').submit(async function (e) {
+                ZnExam.init({
+                    payload: careerPayload,
+                    items: () => ZnExam.each(document.querySelectorAll('#tbl-career-anchors tr[data-item]'),
+                        (el) => $.trim(el.querySelector('.item-rate').value).length > 0),
+                    requireAll: true,
+                    check: () => Object.keys(careerPayload().highest).length < 3
+                        ? 'Tick the 3 items that seem most true for you (the boxes appear once every item is rated).' : null,
+                });
+                $('#form-career-anchors').submit(function (e) {
                     e.preventDefault();
-                    try {
-                        let ans = {};
-                        let highest = {};
-                        $('tr[data-item]').each(function(){
-                            ans[$(this).data('item')] = parseInt($(this).find('.item-rate').val());
-                            if($(this).find('.chk-highest').is(':checked')){
-                                highest[$(this).data('item')] = parseInt($(this).find('.item-rate').val()) + 4;
-                                ans[$(this).data('item')] += 4;
-                            }
-                        });
-
-                        if(Object.keys(highest).length < 3){
-                            alert('Please check the 3 highest items that seem most true for you');
-                            return;
-                        }
-
-                        const url = @json(route('career_anchors.store'));
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                            },
-                            body: JSON.stringify({ set: ans, highest: highest })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert(data.error.join("\n") || 'Unknown error');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Unable to submit.');
-                    }
+                    ZnExam.submit();
                 });
             });
         </script>
@@ -127,10 +116,10 @@
                     @foreach ($answerList as $i => $item)
                         <tr data-item="{{ $i }}">
                             <td>
-                                <input class="form-check-input chk-highest border border-dark" type="checkbox" value="checked" id="item-{{ $i }}-highest" style="{{ empty($answer?->career_highest[$i]) ? 'display: none;' : '' }}" {{ !empty($answer?->career_highest[$i]) ? 'checked' : '' }}>
+                                <input class="form-check-input chk-highest border border-dark" type="checkbox" value="checked" id="item-{{ $i }}-highest" style="{{ empty($prefill['highest'][$i]) ? 'display: none;' : '' }}" {{ !empty($prefill['highest'][$i]) ? 'checked' : '' }}>
                             </td>
                             <td>
-                                <input type="number" class="item-rate" id="item-{{ $i }}" min="1" max="6" value="{{ $answer?->career_ans[$i] }}">
+                                <input type="number" class="item-rate" id="item-{{ $i }}" min="1" max="6" value="{{ $prefill['rate'][$i] ?? '' }}">
                                 {{-- <select class="item-rate" id="item-{{ $i }}">
                                     <option value="1" {{ $answer?->career_ans[$i] == 1 ? 'selected' : '' }}>1</option>
                                     <option value="2" {{ $answer?->career_ans[$i] == 2 ? 'selected' : '' }}>2</option>

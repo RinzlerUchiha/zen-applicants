@@ -277,27 +277,100 @@ return [
     ],
 
     /*
-    | Assessments are listed so the navigation can show them, but the gate that
-    | opens them is NOT defined here — the anti-cheating / OTP workflow is still
-    | being designed. Until then they are simply displayed as locked, which is
-    | truthful: HR provides them after the initial interview, so the applicant
-    | genuinely has nothing to do there yet.
+    |--------------------------------------------------------------------------
+    | Assessments
+    |--------------------------------------------------------------------------
+    | The eleven existing assessments. Their questions, result tables and answer
+    | formats are unchanged; this block adds how each one is RUN.
+    |
+    |   kind      aptitude       graded by HR against zen-admin's answer key
+    |             questionnaire  a personality/preference inventory — no right
+    |                            or wrong answers
+    |   minutes   the time limit, enforced by the server
+    |   typical   roughly how long most people take (shown to the applicant)
+    |   size      what the applicant will face, in plain words
+    |   shuffle   questions / choices shown in a per-attempt random order.
+    |             The submitted values stay the original keys, so HR's marking
+    |             is unaffected.
+    |   table     the existing result table ("completed" = a row exists)
+    |
+    | How the durations were decided (HireFlow 2.5):
+    |   - The three aptitude tests keep the limit their own pages already stated
+    |     and ran: Abstract Reasoning "10 Questions; 10mins exam", Basic Math
+    |     "12 Questions: 12mins exam", Maya 30 minutes (60 progressive
+    |     matrices in five sets of twelve). The old "About N minutes" figures
+    |     (12, 10 and 8) contradicted them and are replaced.
+    |   - The questionnaires were never timed. Their limit is a generous cap
+    |     that bounds the session without making it a speed test: roughly twice
+    |     the typical time for their length, rounded up to 5, minimum 10.
+    |       Enneagram       20 groups of 9 statements (180)   ~10  -> 20
+    |       TAPT            28 word pairs                     ~5   -> 10
+    |       DISC            12 sets of 4 words to rank        ~8   -> 15
+    |       Multiple Int.   80 statements                     ~8   -> 15
+    |       Colour          15 items, 4 choices               ~4   -> 10
+    |       VAK             30 items                          ~5   -> 10
+    |       Why I Work      12 outcomes to rank               ~5   -> 10
+    |       Career Anchors  40 statements rated 1-6, pick 3   ~8   -> 15
+    |
+    | Shuffling: Basic Math and Abstract Reasoning shuffle both questions and
+    | choices (independent items). Maya keeps its order — progressive matrices
+    | run easy to hard, and its answers 1-6 name numbered pieces in the image.
+    | Questionnaires keep their order: several are built as ordered sets, and
+    | there is no answer to copy.
     */
     'assessments' => [
-        'gated'        => true,
-        'gate_message' => 'Nothing is needed from you yet. HR will tell you when to take them.',
+        // The Assessments page's note when the applicant has no access yet.
+        'gate_message' => 'HR gives you an access code after your initial interview. Enter it here to open the assessments.',
+
         'list' => [
-            ['label' => 'Enneagram',              'route' => 'enneagram.show',           'minutes' => 5],
-            ['label' => 'TAPT',                   'route' => 'tapt.show',                'minutes' => 6],
-            ['label' => 'DISC',                   'route' => 'disc.show',                'minutes' => 8],
-            ['label' => 'Multiple Intelligence',  'route' => 'miq.show',                 'minutes' => 7],
-            ['label' => 'What colour are you?',   'route' => 'color.show',               'minutes' => 4],
-            ['label' => 'VAK',                    'route' => 'vak.show',                 'minutes' => 4],
-            ['label' => 'Why I Work',             'route' => 'why_i_work.show',          'minutes' => 5],
-            ['label' => 'Career Anchors',         'route' => 'career_anchors.show',      'minutes' => 6],
-            ['label' => 'Abstract Reasoning',     'route' => 'abstract_reasoning.show',  'minutes' => 12],
-            ['label' => 'Basic Math',             'route' => 'basic_math.show',          'minutes' => 10],
-            ['label' => 'Maya',                   'route' => 'maya.show',                'minutes' => 8],
+            'enneagram'          => ['label' => 'Enneagram',             'route' => 'enneagram.show',          'size' => '20 groups of statements', 'kind' => 'questionnaire', 'minutes' => 20, 'typical' => 10, 'table' => 'tblapp_enneagramtest'],
+            'tapt'               => ['label' => 'TAPT',                  'route' => 'tapt.show',               'size' => '28 word pairs', 'kind' => 'questionnaire', 'minutes' => 10, 'typical' => 5,  'table' => 'tblapp_tapt'],
+            'disc'               => ['label' => 'DISC',                  'route' => 'disc.show',               'size' => '12 sets of words to rank', 'kind' => 'questionnaire', 'minutes' => 15, 'typical' => 8,  'table' => 'tblapp_disc'],
+            'miq'                => ['label' => 'Multiple Intelligence', 'route' => 'miq.show',                'size' => '80 statements', 'kind' => 'questionnaire', 'minutes' => 15, 'typical' => 8,  'table' => 'tblapp_miq'],
+            'color'              => ['label' => 'What colour are you?',  'route' => 'color.show',              'size' => '15 items', 'kind' => 'questionnaire', 'minutes' => 10, 'typical' => 4,  'table' => 'tblapp_whatcolorareyou'],
+            'vak'                => ['label' => 'VAK',                   'route' => 'vak.show',                'size' => '30 questions', 'kind' => 'questionnaire', 'minutes' => 10, 'typical' => 5,  'table' => 'tblapp_vak'],
+            'why_i_work'         => ['label' => 'Why I Work',            'route' => 'why_i_work.show',         'size' => '12 outcomes to rank', 'kind' => 'questionnaire', 'minutes' => 10, 'typical' => 5,  'table' => 'tblapp_whyiwork'],
+            'career_anchors'     => ['label' => 'Career Anchors',        'route' => 'career_anchors.show',     'size' => '40 statements to rate', 'kind' => 'questionnaire', 'minutes' => 15, 'typical' => 8,  'table' => 'tblapp_careeranchors'],
+            'abstract_reasoning' => ['label' => 'Abstract Reasoning',    'route' => 'abstract_reasoning.show', 'size' => '10 picture questions', 'kind' => 'aptitude',      'minutes' => 10, 'typical' => 10, 'table' => 'tblapp_basicabstract', 'shuffle' => ['questions' => true, 'choices' => true]],
+            'basic_math'         => ['label' => 'Basic Math',            'route' => 'basic_math.show',         'size' => '12 questions', 'kind' => 'aptitude',      'minutes' => 12, 'typical' => 12, 'table' => 'tblapp_basicmath',     'shuffle' => ['questions' => true, 'choices' => true]],
+            'maya'               => ['label' => 'Maya',                  'route' => 'maya.show',               'size' => '60 picture puzzles', 'kind' => 'aptitude',      'minutes' => 30, 'typical' => 30, 'table' => 'tblapp_maya'],
+        ],
+
+        /*
+        | Running an attempt (the server's clock).
+        |
+        |   heartbeat_seconds  how often an open exam page checks in (and
+        |                      autosaves)
+        |   grace_seconds      a NEW page load (refresh, reopened tab) within
+        |                      this long of the last check-in simply carries on.
+        |                      Later than this — the browser was closed or the
+        |                      power went — the attempt is INTERRUPTED: the clock
+        |                      stops where the page was last seen, and a new HR
+        |                      code resumes it with the time that was left.
+        |                      The same open window reconnecting after any gap
+        |                      (a dropped connection) always carries on, with
+        |                      the gap counted as exam time.
+        */
+        'attempts' => [
+            'heartbeat_seconds' => 20,
+            'grace_seconds'     => 180,
+        ],
+
+        /*
+        | Access codes (the gate). HR issues one from the applicant's profile in
+        | zen-admin; it opens the assessments in the browser session it is
+        | entered in. zen-admin's config/applicant_assessments.php mirrors
+        | code_minutes and code_length.
+        |
+        |   code_minutes   the code must be used within this long
+        |   unlock_hours   once entered, assessments may be started for this long
+        |   max_failures   wrong entries before the code is revoked
+        */
+        'access' => [
+            'code_length'  => 6,
+            'code_minutes' => 30,
+            'unlock_hours' => 4,
+            'max_failures' => 5,
         ],
     ],
 ];

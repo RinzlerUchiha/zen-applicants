@@ -23,6 +23,16 @@
         </style>
         <script>
             let target;
+
+            // The answers, exactly as Submit has always sent them.
+            function whyIWorkPayload() {
+                let ans = {};
+                $('tr[data-item]').each(function(){
+                    ans[$(this).data('item')] = $(this).find('.rank').val();
+                });
+                return { set: ans };
+            }
+
             $(function() {
 
                 $('#optionModal').on('show.bs.modal', function(e) {
@@ -38,36 +48,16 @@
                     target.text(this.value);
 
                     $('#optionModal').modal('hide');
+                    ZnExam.changed();
                 });
                 
-                $('#btn-submit').click(async function () {
-                    try {
-                        let ans = {};
-                        $('tr[data-item]').each(function(){
-                            ans[$(this).data('item')] = $(this).find('.rank').val();
-                        });
-
-                        const url = @json(route('why_i_work.store'));
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                            },
-                            body: JSON.stringify({ set: ans })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert(data.error.join("\n") || 'Unknown error');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Unable to submit.');
-                    }
+                ZnExam.init({
+                    payload: whyIWorkPayload,
+                    // Every outcome starts ranked, so there is nothing to count.
+                    progress: () => '{{ count($answerList) }} outcomes to rank',
+                });
+                $('#btn-submit').click(function () {
+                    ZnExam.submit();
                 });
             });
         </script>
@@ -86,7 +76,7 @@
                     @foreach ($answerList as $i => $item)
                         <tr data-item="{{ $i }}">
                             <td>
-                                <button id="item-{{ $i }}" type="button" class="zn-btn zn-btn-out rank" data-bs-toggle="modal" data-bs-target="#optionModal" value="{{ $answer?->{'outcome_'.$i} ?? $loop->iteration }}">{{ $answer?->{'outcome_'.$i} ?? $loop->iteration }}</button>
+                                <button id="item-{{ $i }}" type="button" class="zn-btn zn-btn-out rank" data-bs-toggle="modal" data-bs-target="#optionModal" value="{{ $prefill[$i] ?? $loop->iteration }}">{{ $prefill[$i] ?? $loop->iteration }}</button>
                             </td>
                             <td>{{ $item['cat'] }}</td>
                             <td>{{ $item['desc'] }}</td>

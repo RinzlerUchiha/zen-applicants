@@ -25,42 +25,26 @@
 
 @if (!$answer)
 <script>
-    $(function() {
-        $('#form-tapt').submit(async function (e) {
-            e.preventDefault();
-
-            try {
-                let ans = {};
-                $('.tapt-ans:checked').each(function(){
-                    if(!ans[$(this).data('set')]){
-                        ans[$(this).data('set')] = {};
-                    }
-
-                    // ans[$(this).data('set')][$(this).data('row')] = [this.value, $(this).siblings('.form-check-label').text()];
-                    ans[$(this).data('set')][$(this).data('row')] = this.value;
-                });
-
-                const url = @json(route('tapt.store'));
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                    },
-                    body: JSON.stringify({ set: ans })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error.join("\n") || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to submit.');
+    function taptPayload() {
+        let ans = {};
+        $('.tapt-ans:checked').each(function(){
+            if (!ans[$(this).data('set')]) {
+                ans[$(this).data('set')] = {};
             }
+            ans[$(this).data('set')][$(this).data('row')] = this.value;
+        });
+        return { set: ans };
+    }
+
+    $(function() {
+        ZnExam.init({
+            payload: taptPayload,
+            items: () => ZnExam.each(document.querySelectorAll('#form-tapt .set-row'), ZnExam.hasChecked),
+            requireAll: true,
+        });
+        $('#form-tapt').submit(function (e) {
+            e.preventDefault();
+            ZnExam.submit();
         });
     });
 </script>
@@ -82,7 +66,7 @@
                             <div class="d-flex justify-content-evenly set-row border-top border-3">
                                 @foreach ($item as $o => $opt)
                                     <div class="form-check my-0 py-1 w-100 {{ $loop->last ? 'ms-5' : '' }}">
-                                        <input class="form-check-input tapt-ans" type="radio" data-set="{{ $s }}" data-row="{{ $i }}" value="{{ $o }}" name="set-{{ $s.'-'.$i }}" id="set-{{ $s.'-'.$i.'-'.$o }}" {{ ($answer?->tapt_ans[$s][$i] ?? '') == $o ? 'checked' : '' }} required>
+                                        <input class="form-check-input tapt-ans" type="radio" data-set="{{ $s }}" data-row="{{ $i }}" value="{{ $o }}" name="set-{{ $s.'-'.$i }}" id="set-{{ $s.'-'.$i.'-'.$o }}" {{ ($prefill[$s][$i] ?? '') == $o ? 'checked' : '' }} required>
                                         <label class="form-check-label w-100" for="set-{{ $s.'-'.$i.'-'.$o }}">{{ $opt }}</label>
                                     </div>
                                 @endforeach

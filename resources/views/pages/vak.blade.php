@@ -25,44 +25,25 @@
 
 @if (!$answer)
 <script>
+    function vakPayload() {
+        let ans = {};
+        $('#form-vak [data-item]').each(function(){
+            const selectedOpt = $('.vak-ans-' + $(this).data('item') + ':checked');
+            ans[$(this).data('item')] = selectedOpt.data('cat');
+        });
+        return { set: ans };
+    }
+
     $(function() {
-        $('#form-vak').submit(async function (e) {
+        ZnExam.init({
+            payload: vakPayload,
+            items: () => ZnExam.each(document.querySelectorAll('#form-vak [data-item]'),
+                (el) => document.querySelector('.vak-ans-' + el.dataset.item + ':checked')),
+            requireAll: true,
+        });
+        $('#form-vak').submit(function (e) {
             e.preventDefault();
-
-            try {
-                let ans = {};
-                $('#form-vak [data-item]').each(function(){
-                    const selectedOpt = $('.vak-ans-' + $(this).data('item') + ':checked');
-                    // ans[$(this).data('item')] = {
-                    //     q: this.value,
-                    //     cat: selectedOpt.data('cat'),
-                    //     ans: selectedOpt.val()
-                    // };
-
-                    ans[$(this).data('item')] = selectedOpt.data('cat');
-                });
-
-                const url = @json(route('vak.store'));
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                    },
-                    body: JSON.stringify({ set: ans })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error.join("\n") || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to submit.');
-            }
+            ZnExam.submit();
         });
     });
 </script>
@@ -81,7 +62,7 @@
                 <div class="row">
                     <div class="col ps-5">
                         <div class="form-check zn-option">
-                            <input class="form-check-input vak-ans-{{ $i }}" type="radio" data-cat="{{ $o }}" value="{{ $opt }}" id="opt-{{ $i.'-'.$o }}" name="opt-{{ $i }}" {{ ($answer?->vak_ans[$i] ?? '') == $o ? 'checked' : '' }} required>
+                            <input class="form-check-input vak-ans-{{ $i }}" type="radio" data-cat="{{ $o }}" value="{{ $opt }}" id="opt-{{ $i.'-'.$o }}" name="opt-{{ $i }}" {{ ($prefill[$i] ?? '') == $o ? 'checked' : '' }} required>
                             <label class="form-check-label" for="opt-{{ $i.'-'.$o }}">{{ $opt }}</label>
                         </div>
                     </div>

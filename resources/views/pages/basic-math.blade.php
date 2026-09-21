@@ -30,95 +30,46 @@
 
 @if (!$answer)
 <script>
-    let duration = 12 * 60; // 10 minutes
-    let timeLeft = duration;
-    let timer = null;
+    // Every item is sent, unanswered ones as null. The clock is the server's
+    // (public/zn-exam.js), not this page's.
+    function basicMathPayload() {
+        let ans = {};
+        $('#form-basic-math [data-item]').each(function(){
+            const selectedOpt = $('.basic-math-ans-' + $(this).data('item') + ':checked');
+            ans[$(this).data('item')] = selectedOpt.val() ?? null;
+        });
+        return { set: ans };
+    }
 
     $(function() {
-        $('#form-basic-math').submit(async function (e) {
-            e.preventDefault();
-
-            try {
-                let ans = {};
-                $('#form-basic-math [data-item]').each(function(){
-                    const selectedOpt = $('.basic-math-ans-' + $(this).data('item') + ':checked');
-                    ans[$(this).data('item')] = selectedOpt.val();
-                });
-
-                const url = @json(route('basic_math.store'));
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                    },
-                    body: JSON.stringify({ set: ans })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error.join("\n") || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to submit.');
-            }
+        ZnExam.init({
+            payload: basicMathPayload,
+            items: () => ZnExam.each(document.querySelectorAll('#form-basic-math [data-item]'),
+                (el) => document.querySelector('.basic-math-ans-' + el.dataset.item + ':checked')),
         });
-
-        $('#btn-start').click(function(){
-            $(this).hide();
-            $('#timer, #form-basic-math').show();
-
-            if (timer !== null) return; // prevent multiple starts
-
-            updateTimer(); // show first value immediately
-            timer = setInterval(updateTimer, 1000);
-
+        $('#form-basic-math').submit(function (e) {
+            e.preventDefault();
+            ZnExam.submit();
         });
     });
-
-    function updateTimer() {
-        let minutes = Math.floor(timeLeft / 60);
-        let seconds = timeLeft % 60;
-
-        seconds = seconds < 10 ? '0' + seconds : seconds;
-        $('#timer').text('00:' + (minutes < 10 ? '0' + minutes : minutes) + ':' + seconds);
-
-        if (timeLeft <= 0) {
-            $('#form-basic-math').submit();
-            alert('Time up!');
-            clearInterval(timer);
-            timer = null;
-            $('#timer').text('Time up!');
-            return;
-        }
-
-        timeLeft--;
-    }
 </script>
 @endif
 <div class="w-100 h-100 position-relative">
-    <button class="zn-btn zn-btn-out position-absolute top-0 start-50 translate-middle-x" style="{{ $answer ? 'display: none;' : '' }}" id="btn-start">Start Timer</button>
-    <div class="border border-3 border-danger text-danger rounded p-1 position-sticky bg-white" id="timer" style="display: none;">00:12:00</div>
-
-    <form id="form-basic-math" class="ms-md-5 mb-5" style="{{ !$answer ? 'display: none;' : '' }}" oncontextmenu="return false;">
+    <form id="form-basic-math" class="ms-md-5 mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
-            <div class="text-muted small mb-3">BASIC MATH (12 Questions: 12mins exam)</div>
+            <div class="text-muted small mb-3">BASIC MATH ({{ count($answerList) }} questions)</div>
             @foreach ($answerList as $i => $item)
                 <div class="row">
                     <div class="col">
-                        <input type="text" readonly tabindex="-1" class="zn-question" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $item['question'] }}">
+                        <input type="text" readonly tabindex="-1" class="zn-question" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $loop->iteration }}. {{ preg_replace('/^\s*\d+\.\s*/', '', $item['question']) }}">
                     </div>
                 </div>
                 @foreach ($item['answer'] as $o => $opt)
                     <div class="row">
                         <div class="col ps-5">
                             <div class="form-check zn-option">
-                                <input class="form-check-input basic-math-ans-{{ $i }}" type="radio" data-cat="{{ $o }}" value="{{ $o }}" id="opt-{{ $i.'-'.$o }}" name="opt-{{ $i }}" {{ ($answer?->math_ans[$i] ?? '') == $o ? 'checked' : '' }} required>
-                                <label class="form-check-label" for="opt-{{ $i.'-'.$o }}">{{ $opt }}</label>
+                                <input class="form-check-input basic-math-ans-{{ $i }}" type="radio" data-cat="{{ $o }}" value="{{ $o }}" id="opt-{{ $i.'-'.$o }}" name="opt-{{ $i }}" {{ ($prefill[$i] ?? '') == $o ? 'checked' : '' }} required>
+                                <label class="form-check-label" for="opt-{{ $i.'-'.$o }}">{{ chr(64 + $loop->iteration) }}. {{ preg_replace('/^\s*[A-D]\.?\s+/', '', $opt) }}</label>
                             </div>
                         </div>
                     </div>

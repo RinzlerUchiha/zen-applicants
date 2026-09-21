@@ -60,6 +60,7 @@
   --zn-lock:      #8a7e76;
   --zn-lock-soft: #f0edea;
   --zn-caution:   #9a6200;
+  --zn-caution-soft: #fbf3e4;
 
   --zn-brand: #5d2502;
 
@@ -99,6 +100,7 @@
   --zn-lock:      #877a72;
   --zn-lock-soft: #251f1b;
   --zn-caution:   #d9a441;
+  --zn-caution-soft: #2c2415;
 
   --zn-brand: #c9a08a;
 
@@ -1216,3 +1218,130 @@ fieldset:not(:disabled) .form-control-plaintext.border-bottom,
 .zn-withdraw-link { font-size: 12px; color: var(--zn-ink-3); }
 .zn-withdraw-link:hover { color: var(--zn-warn); }
 .zn-application.is-closed .zn-track { opacity: .55; }
+
+/* ---------- 34. Assessments · the exam frame (HireFlow 2.5) ---------------
+   Access code, the rules before Start, the running exam's bar (the server's
+   clock, progress, question map, autosave), and the overlays: fullscreen,
+   another window, submitting. Built from the same tokens as the rest of the
+   app so it reads as ZenHub, not as a separate exam product. */
+.zn-btn-lg { font-size: 14.5px; padding: 11px 22px; }
+button.zn-link { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+
+/* Access code */
+.zn-assess-code { margin: 4px 0 0; max-width: 420px; }
+.zn-assess-code label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 5px; }
+.zn-assess-code-row { display: flex; gap: 8px; }
+.zn-assess-code-row .zn-input {
+  flex: 1; min-width: 0; font-size: 18px; letter-spacing: .3em; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.zn-assess-code .zn-muted { font-size: 12px; margin: 6px 0 0; }
+.zn-input.is-invalid { border-color: var(--zn-warn); }
+.zn-field-error { color: var(--zn-warn); font-size: 12.5px; margin: 6px 0 0; }
+
+/* State panels: locked, elsewhere, interrupted, finished */
+.zn-assess-panel {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--zn-surface); border: 1px solid var(--zn-line); border-radius: var(--zn-radius);
+  padding: 16px 18px; margin-bottom: 18px;
+}
+.zn-assess-panel.is-done { border-color: var(--zn-ok-soft); }
+.zn-assess-panel-icon {
+  flex: 0 0 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--zn-accent-soft); color: var(--zn-accent); font-size: 16px;
+}
+.zn-assess-panel-icon.is-ok { background: var(--zn-ok-soft); color: var(--zn-ok); }
+.zn-assess-panel-icon.is-caution { background: var(--zn-warn-soft); color: var(--zn-caution); }
+.zn-assess-panel-main { flex: 1; min-width: 0; }
+.zn-assess-panel-title { font-weight: 700; margin: 4px 0 4px; }
+.zn-assess-panel-text { font-size: 13.5px; color: var(--zn-ink-2); margin: 0 0 12px; }
+
+/* Before you start */
+.zn-assess-rules {
+  background: var(--zn-surface); border: 1px solid var(--zn-line); border-radius: var(--zn-radius);
+  padding: 18px 20px; margin-bottom: 18px;
+}
+.zn-assess-rules-title { font-weight: 700; margin: 0 0 12px; }
+.zn-assess-rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; margin-bottom: 18px; }
+.zn-assess-rules-grid > div {
+  display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; row-gap: 2px; font-size: 13px; color: var(--zn-ink-2);
+}
+.zn-assess-rules-grid i { grid-row: span 2; color: var(--zn-accent); font-size: 16px; }
+.zn-assess-rules-grid b { color: var(--zn-ink); font-size: 13.5px; }
+.zn-assess-start { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0; }
+.zn-assess-start .zn-muted { font-size: 12.5px; }
+.zn-assess-rules-foot { font-size: 12px; color: var(--zn-ink-3); margin: 10px 0 0; }
+.zn-assess-review-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--zn-ink-3); margin: 0 0 8px; }
+
+/* The running exam's bar */
+.zn-exam-running .zn-assess-head { margin-bottom: 10px; }
+.zn-exam-bar {
+  position: sticky; top: 0; z-index: 20;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px 16px;
+  background: var(--zn-surface); border: 1px solid var(--zn-line); border-radius: var(--zn-radius);
+  box-shadow: var(--zn-shadow); padding: 10px 14px; margin-bottom: 14px;
+}
+.zn-exam-clock { display: flex; align-items: baseline; gap: 6px; font-weight: 700; }
+.zn-exam-clock i { color: var(--zn-accent); align-self: center; }
+#zn-exam-timer { font-size: 22px; font-variant-numeric: tabular-nums; }
+.zn-exam-clock-label { font-size: 12px; font-weight: 400; color: var(--zn-ink-3); }
+.zn-exam-clock.is-low, .zn-exam-clock.is-low i { color: var(--zn-caution); }
+.zn-exam-clock.is-critical, .zn-exam-clock.is-critical i { color: var(--zn-warn); }
+.zn-exam-progress { min-width: 0; font-size: 12.5px; color: var(--zn-ink-2); }
+.zn-exam-progress .zn-bar { margin-top: 4px; }
+.zn-exam-actions { display: flex; gap: 6px; }
+.zn-exam-saved { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--zn-ink-3); }
+.zn-exam-saved[data-state="ok"]::before { content: "\2713\00a0"; }
+.zn-exam-saved[data-state="ok"] { color: var(--zn-ok); }
+.zn-exam-saved[data-state="error"] { color: var(--zn-warn); }
+
+/* Question map: answered / not yet; opens under the bar */
+.zn-exam-map { grid-column: 1 / -1; display: none; border-top: 1px solid var(--zn-divider); padding-top: 10px; }
+.zn-exam-map.is-open { display: block; }
+.zn-exam-map-head { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--zn-ink-3); margin-bottom: 8px; flex-wrap: wrap; }
+.zn-exam-key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; border: 1px solid var(--zn-line-2); vertical-align: -1px; margin: 0 3px 0 8px; }
+.zn-exam-key.is-answered { background: var(--zn-accent); border-color: var(--zn-accent); }
+.zn-exam-map-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 5px; max-height: 176px; overflow-y: auto; }
+.zn-exam-map-list button {
+  height: 32px; border-radius: 6px; border: 1px solid var(--zn-line-2); background: var(--zn-surface);
+  font-size: 12px; font-variant-numeric: tabular-nums; color: var(--zn-ink-2); cursor: pointer;
+}
+.zn-exam-map-list button.is-answered { background: var(--zn-accent); border-color: var(--zn-accent); color: var(--zn-on-accent); }
+.zn-exam-map-list button:focus-visible { outline: 2px solid var(--zn-accent); outline-offset: 1px; }
+.zn-exam-flash { outline: 2px solid var(--zn-accent); outline-offset: 4px; border-radius: 4px; }
+
+/* Overlays: fullscreen, another window, submitting. While one is up the
+   questions are hidden, not just covered. */
+.zn-exam-overlay {
+  position: fixed; inset: 0; z-index: 1080;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(20, 16, 12, .55);
+}
+.zn-exam-overlay[hidden] { display: none; }
+.zn-exam-overlay-box {
+  background: var(--zn-surface); border-radius: var(--zn-radius-lg); box-shadow: var(--zn-shadow-pop);
+  padding: 22px 24px; max-width: 400px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.zn-exam-overlay-box > i { font-size: 26px; color: var(--zn-accent); }
+.zn-exam-overlay-box p { margin: 0; font-size: 13.5px; color: var(--zn-ink-2); }
+body.zn-exam-covered .zn-assess-body { visibility: hidden; }
+
+/* The Assessments page: access, groups, cards */
+.zn-assess-group { margin: 22px 0 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--zn-ink-3); }
+.zn-assess-group small { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+.zn-assess-card-sub { display: block; font-size: 12px; color: var(--zn-ink-3); font-weight: 400; margin-top: 2px; }
+.zn-assess-cta { font-size: 12px; font-weight: 700; color: var(--zn-accent); white-space: nowrap; }
+.zn-assess-card.is-interrupted .zn-assess-mark,
+.zn-assess-card.is-timed_out .zn-assess-mark { color: var(--zn-caution); }
+.zn-assess-card.is-active, .zn-assess-card.is-elsewhere { border-color: var(--zn-accent); }
+.zn-assess-card.is-locked .zn-assess-cta { color: var(--zn-ink-3); font-weight: 400; }
+
+@media (max-width: 720px) {
+  .zn-assess-rules-grid { grid-template-columns: 1fr; }
+  .zn-exam-bar { grid-template-columns: auto 1fr; gap: 8px 12px; padding: 8px 10px; }
+  .zn-exam-actions { grid-column: 1 / -1; }
+  .zn-exam-actions .zn-btn { flex: 1; justify-content: center; }
+  #zn-exam-timer { font-size: 19px; }
+  .zn-assess-panel { padding: 14px; gap: 10px; }
+}

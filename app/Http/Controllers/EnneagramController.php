@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Enneagram;
+use App\Rules\KnownKeys;
+use App\Services\AssessmentAttempts;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -10,25 +12,46 @@ class EnneagramController extends Controller
 {
     public static function show()
     {
-        $answer = auth()->user()->enneagram;
-        if($answer?->enneagram_ans){
+        $attempts = app(AssessmentAttempts::class);
+        $exam = $attempts->view(auth()->user(), 'enneagram', claim: true);
+
+        $answer = $exam->hasResult ? auth()->user()->enneagram : null;
+        if ($answer?->enneagram_ans) {
             $answer->enneagram_ans = json_decode($answer->enneagram_ans, true);
         }
+        // Saved answers once finished; the autosaved draft while running.
+        $prefill = $answer ? ($answer->enneagram_ans ?? []) : ($exam->attempt?->draft['set'] ?? []);
+
+        $list = Enneagram::showAnswerList();
+
         return view('pages.enneagram', [
-            'answerList' => Enneagram::showAnswerList(),
-            'answer' => $answer
+            'answerList' => $list,
+            'answer' => $answer,
+            'prefill' => $prefill,
+            'exam' => $exam,
         ]);
     }
 
+    /**
+     * Submit — only while this applicant's attempt may still be written
+     * (App\Services\AssessmentAttempts). The saving itself is save(), unchanged.
+     */
     public static function store(Request $request)
+    {
+        return app(AssessmentAttempts::class)->submit(auth()->user(), 'enneagram', $request, fn (Request $r) => self::save($r));
+    }
+
+    /** Validate and store the answers (also used for the time-up submission). */
+    public static function save(Request $request)
     {
         try {
 
+            $list = Enneagram::showAnswerList();
+
             $validated = $request->validate([
-                    'set' => 'required|array',
+                    'set' => ['required', 'array', new KnownKeys(array_keys($list), complete: true)],
                     'set.*' => 'required|array',
-                    // 'set.*.*' => 'required|string',
-                    'set.*.*' => 'required|integer',
+                    'set.*.*' => 'required|integer|between:1,9',
                 ],
                 [
                     'set.required' => 'Please select atleast 1 from the set',

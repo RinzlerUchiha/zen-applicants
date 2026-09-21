@@ -118,6 +118,7 @@
                     onEnd: function () {
                         // final cleanup (like your dragend)
                         $('.rank-area').removeClass('drag-over');
+                        ZnExam.changed();
                     }
                     });
                 });
@@ -126,41 +127,27 @@
             $(function() {
                 initRankDragDropSortable();
 
-                $('#btn-submit').click(async function () {
-                    try {
-                        let ans = {};
-                        $('[data-set]').each(function(){
-                            if(!ans[$(this).data('set')]){
-                                ans[$(this).data('set')] = {};
-                            }
-
-                            // ans[$(this).data('set')][$(this).data('item')] = { rank: $(this).find('.rank').data('rank'), content: $(this).data('content') };
-                            ans[$(this).data('set')][$(this).data('item')] = $(this).find('.rank').data('rank');
-                        });
-
-                        const url = @json(route('disc.store'));
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                            },
-                            body: JSON.stringify({ set: ans })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert(data.error.join("\n") || 'Unknown error');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Unable to submit.');
-                    }
+                ZnExam.init({
+                    payload: discPayload,
+                    // Every set starts fully ranked, so there is nothing to count.
+                    progress: () => '{{ count($answerList) }} sets to rank',
+                });
+                $('#btn-submit').click(function () {
+                    ZnExam.submit();
                 });
             });
+
+            // The answers, exactly as Submit has always sent them.
+            function discPayload() {
+                let ans = {};
+                $('[data-set]').each(function(){
+                    if (!ans[$(this).data('set')]) {
+                        ans[$(this).data('set')] = {};
+                    }
+                    ans[$(this).data('set')][$(this).data('item')] = $(this).find('.rank').data('rank');
+                });
+                return { set: ans };
+            }
 
             // Helper: ensure same data-set
             function canSwap($aRank, $bRank) {
@@ -187,7 +174,7 @@
                         @foreach ($set as $i => $item)
                             <tr data-set="{{ $s }}" data-item="{{ $i }}" data-content="{{ $item }}">
                                 <td class="rank-area">
-                                    <div class="rank" data-rank="{{ $answer?->disc_ans[$s][$i] ?? $loop->iteration }}">{{ $answer?->disc_ans[$s][$i] ?? $loop->iteration }}</div>
+                                    <div class="rank" data-rank="{{ $prefill[$s][$i] ?? $loop->iteration }}">{{ $prefill[$s][$i] ?? $loop->iteration }}</div>
                                 </td>
                                 <td>{{ $item }}</td>
                             </tr>

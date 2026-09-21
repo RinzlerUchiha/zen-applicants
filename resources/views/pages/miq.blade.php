@@ -25,40 +25,27 @@
 
 @if (!$answer)
 <script>
+    function miqPayload() {
+        let ans = {};
+        $('.miq-ans:checked').each(function(){
+            ans[$(this).data('item')] = {
+                cat: $(this).data('cat'),
+                ans: this.value
+            };
+        });
+        return { set: ans };
+    }
+
     $(function() {
-        $('#form-miq').submit(async function (e) {
+        ZnExam.init({
+            payload: miqPayload,
+            // Tick the ones that apply — there is no "unanswered" here.
+            progress: () => $('.miq-ans:checked').length + ' ticked',
+            check: () => $('.miq-ans:checked').length ? null : 'Tick at least one statement that applies to you.',
+        });
+        $('#form-miq').submit(function (e) {
             e.preventDefault();
-
-            try {
-                let ans = {};
-                $('.miq-ans:checked').each(function(){
-                    ans[$(this).data('item')] = {
-                        cat: $(this).data('cat'),
-                        ans: this.value
-                    };
-                });              
-
-                const url = @json(route('miq.store'));
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': $('[name="csrf-token"]').attr('content'),
-                    },
-                    body: JSON.stringify({ set: ans })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error.join("\n") || 'Unknown error');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Unable to submit.');
-            }
+            ZnExam.submit();
         });
     });
 </script>
@@ -69,7 +56,7 @@
         <div class="text-muted small mb-3">Research Shows that all human beings have at least eight different types of intelligences. Depending on your background and age, some intelligences are more developed than the others. This activity will help you find out what your strengths are. Knowing this, you can strengthen the other intelligences that you do not use as often.</div>
         @foreach ($answerList as $i => $item)
             <div class="form-check zn-option">
-                <input class="form-check-input miq-ans" type="checkbox" data-cat="{{ $item['cat'] }}" value="{{ $item['ans'] }}" data-item="{{ $i }}" id="item-{{ $i }}" {{ in_array($i, ($answer?->miq_ans ?? [])) ? 'checked' : '' }}>
+                <input class="form-check-input miq-ans" type="checkbox" data-cat="{{ $item['cat'] }}" value="{{ $item['ans'] }}" data-item="{{ $i }}" id="item-{{ $i }}" {{ in_array($i, $prefill) ? 'checked' : '' }}>
                 <label class="form-check-label" for="item-{{ $i }}">{{ $item['ans'] }}</label>
             </div>
         @endforeach
