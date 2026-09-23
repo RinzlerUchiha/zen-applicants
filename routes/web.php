@@ -41,6 +41,9 @@ Route::view('/terms', 'pages.terms')->name('terms');
 
 Route::get('/careers', [JobListingController::class, 'index'])->name('careers.index');
 Route::get('/careers/{id}', [JobListingController::class, 'show'])->name('careers.show');
+Route::get('/careers/{id}/panel', [JobListingController::class, 'panel'])->whereNumber('id')->name('careers.panel');
+Route::get('/careers/{id}/photo/{name}', [JobListingController::class, 'photo'])
+    ->whereNumber('id')->where('name', '[A-Za-z0-9]{24}\.(webp|jpe?g|png)')->name('careers.photo');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -55,6 +58,8 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
     // Route::get('/logout', [AuthController::class, 'logout']);
 
+    // The apply step (CV, 2x2 picture, optional cover letter), then submit.
+    Route::get('/careers/{id}/apply', [JobListingController::class, 'applyForm'])->whereNumber('id')->name('careers.apply.form');
     Route::post('/careers/{id}/apply', [JobListingController::class, 'apply'])->name('careers.apply');
     Route::get('/applications', [ApplicationController::class, 'index'])->name('applications.index');
     // Withdraws ONE application. Found only among the signed-in applicant's own.
@@ -99,13 +104,19 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::post('/work/characterref', [CharacterRefController::class, 'store'])->name('characterref.store')->middleware('continueAfterSave');
     Route::delete('/work/characterref/{id}', [CharacterRefController::class, 'delete'])->name('characterref.delete');
 
-    Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
+    // An aptitude test that was started is finished before any other
+    // assessment: the list and the other assessments lead back to it.
+    Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index')->middleware('aptitudeLock');
 
     // Shared by all eleven assessments: HR's access code, starting/resuming an
     // attempt, the exam page's check-in (heartbeat + autosave), and the
     // question images of the picture-based tests. Throttled against guessing.
     Route::post('/assessments/access', [AssessmentController::class, 'access'])
         ->middleware('throttle:10,1')->name('assessments.access');
+    // Asking HR for a new code once access has ended (no message is sent; HR
+    // sees open requests in zen-admin).
+    Route::post('/assessments/access/request', [AssessmentController::class, 'requestAccess'])
+        ->middleware('throttle:5,1,access-request')->name('assessments.access.request');
     Route::post('/assessments/{assessment}/start', [AssessmentController::class, 'start'])
         ->whereIn('assessment', AssessmentAttempts::keys())->name('assessments.start');
     Route::post('/assessments/{assessment}/ping', [AssessmentController::class, 'ping'])
@@ -113,37 +124,37 @@ Route::middleware(['auth', 'checkUserStatus'])->group(function () {
     Route::get('/assessments/{assessment}/image/{file}', [AssessmentController::class, 'image'])
         ->whereIn('assessment', AssessmentAttempts::keys())->name('assessments.image');
 
-    Route::get('/personality/enneagram', [EnneagramController::class, 'show'])->name('enneagram.show');
+    Route::get('/personality/enneagram', [EnneagramController::class, 'show'])->name('enneagram.show')->middleware('aptitudeLock');
     Route::post('/personality/enneagram', [EnneagramController::class, 'store'])->name('enneagram.store');
 
-    Route::get('/personality/tapt', [TaptController::class, 'show'])->name('tapt.show');
+    Route::get('/personality/tapt', [TaptController::class, 'show'])->name('tapt.show')->middleware('aptitudeLock');
     Route::post('/personality/tapt', [TaptController::class, 'store'])->name('tapt.store');
 
-    Route::get('/personality/disc', [DiscController::class, 'show'])->name('disc.show');
+    Route::get('/personality/disc', [DiscController::class, 'show'])->name('disc.show')->middleware('aptitudeLock');
     Route::post('/personality/disc', [DiscController::class, 'store'])->name('disc.store');
 
-    Route::get('/personality/miq', [MiqController::class, 'show'])->name('miq.show');
+    Route::get('/personality/miq', [MiqController::class, 'show'])->name('miq.show')->middleware('aptitudeLock');
     Route::post('/personality/miq', [MiqController::class, 'store'])->name('miq.store');
 
-    Route::get('/personality/color', [ColorController::class, 'show'])->name('color.show');
+    Route::get('/personality/color', [ColorController::class, 'show'])->name('color.show')->middleware('aptitudeLock');
     Route::post('/personality/color', [ColorController::class, 'store'])->name('color.store');
 
-    Route::get('/personality/vak', [VakController::class, 'show'])->name('vak.show');
+    Route::get('/personality/vak', [VakController::class, 'show'])->name('vak.show')->middleware('aptitudeLock');
     Route::post('/personality/vak', [VakController::class, 'store'])->name('vak.store');
     
-    Route::get('/personality/why-i-work', [WhyIWorkController::class, 'show'])->name('why_i_work.show');
+    Route::get('/personality/why-i-work', [WhyIWorkController::class, 'show'])->name('why_i_work.show')->middleware('aptitudeLock');
     Route::post('/personality/why-i-work', [WhyIWorkController::class, 'store'])->name('why_i_work.store');
 
-    Route::get('/personality/career-anchors', [CareerAnchorController::class, 'show'])->name('career_anchors.show');
+    Route::get('/personality/career-anchors', [CareerAnchorController::class, 'show'])->name('career_anchors.show')->middleware('aptitudeLock');
     Route::post('/personality/career-anchors', [CareerAnchorController::class, 'store'])->name('career_anchors.store');
 
-    Route::get('/personality/abtract-reasoning', [BasicAbstractReasoningController::class, 'show'])->name('abstract_reasoning.show');
+    Route::get('/personality/abtract-reasoning', [BasicAbstractReasoningController::class, 'show'])->name('abstract_reasoning.show')->middleware('aptitudeLock');
     Route::post('/personality/abtract-reasoning', [BasicAbstractReasoningController::class, 'store'])->name('abstract_reasoning.store');
 
-    Route::get('/personality/basic-math', [BasicMathController::class, 'show'])->name('basic_math.show');
+    Route::get('/personality/basic-math', [BasicMathController::class, 'show'])->name('basic_math.show')->middleware('aptitudeLock');
     Route::post('/personality/basic-math', [BasicMathController::class, 'store'])->name('basic_math.store');
 
-    Route::get('/personality/maya', [MayaController::class, 'show'])->name('maya.show');
+    Route::get('/personality/maya', [MayaController::class, 'show'])->name('maya.show')->middleware('aptitudeLock');
     Route::post('/personality/maya', [MayaController::class, 'store'])->name('maya.store');
 
     Route::get('/file/{src}/{filename}', [FileController::class, 'serve'])->name('file.get');

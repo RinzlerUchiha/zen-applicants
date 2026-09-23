@@ -22,7 +22,7 @@
                 <span class="zn-pill {{ $pillClass }}">{{ $document->review_label }}</span>
             </div>
             <div class="zn-doc-meta">
-                {{ $document->doc_original_name }} · {{ $document->size_for_humans }} ·
+                {{ $document->display_name }} · {{ $document->size_for_humans }} ·
                 sent {{ $document->uploaded_at?->format('M j, Y') }}
             </div>
         </div>

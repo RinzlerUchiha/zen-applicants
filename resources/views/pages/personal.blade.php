@@ -75,8 +75,6 @@
                         @endforeach
                     </ul>
                 </div>
-            @elseif ($user?->app_posapplied)
-                <p class="zn-identity-meta">Applied for <b>{{ $user->app_posapplied }}</b></p>
             @endif
 
             @if ($user?->app_date)
@@ -140,9 +138,16 @@
             <section class="zn-card zn-formcard">
                 <div class="zn-formcard-head">
                     <div class="zn-section mb-0"><h5>{{ $block['label'] }}</h5></div>
+                    {{-- Current address and place of birth can copy the permanent
+                         address (public/zn-forms.js). --}}
                     @if ($k === 'cadd')
                         <label class="zn-check">
-                            <input type="checkbox" id="same-as-permanent">
+                            <input type="checkbox" id="same-as-permanent" data-same-as-to="cadd">
+                            <span>Same as permanent address</span>
+                        </label>
+                    @elseif ($k === 'badd')
+                        <label class="zn-check">
+                            <input type="checkbox" id="same-as-permanent-birth" data-same-as-to="badd">
                             <span>Same as permanent address</span>
                         </label>
                     @endif
@@ -180,6 +185,8 @@
                                         value="{{ $b->br_name }}" @selected($user?->address?->{'add_' . ($k === 'padd' ? 'perm' : ($k === 'cadd' ? 'cur' : 'birth')) . '_brngy'} === $b->br_name)>{{ $b->br_name }}</option>
                             @endforeach
                         </select>
+                        <input type="text" class="zn-typed-fallback" data-for="personal-{{ $k }}-barangay"
+                               value="{{ $user?->address?->{'add_' . ($k === 'padd' ? 'perm' : ($k === 'cadd' ? 'cur' : 'birth')) . '_brngy'} }}" maxlength="255" placeholder="Type your barangay" hidden>
                     </div>
                     <div class="zn-fld zn-col-3">
                         <label for="personal-{{ $k }}-specific">Street / House no.
@@ -396,31 +403,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    /* ---- Current address mirrors permanent ---- */
-    const sameAs = document.getElementById('same-as-permanent');
-    const pairs = [
-        ['personal-padd-province', 'personal-cadd-province'],
-        ['personal-padd-city', 'personal-cadd-city'],
-        ['personal-padd-barangay', 'personal-cadd-barangay'],
-        ['personal-padd-specific', 'personal-cadd-specific'],
-    ];
-
-    if (sameAs) {
-        sameAs.addEventListener('change', function () {
-            pairs.forEach(function ([from, to]) {
-                const src = document.getElementById(from);
-                const dst = document.getElementById(to);
-
-                if (sameAs.checked) {
-                    dst.querySelectorAll('option').forEach(function (o) {
-                        if (o.value === src.value) o.style.display = '';
-                    });
-                    dst.value = src.value;
-                }
-                dst.readOnly = sameAs.checked && dst.tagName !== 'SELECT';
-            });
-        });
-    }
+    /* ---- "Same as permanent address": public/zn-forms.js ---- */
 
     /* ---- Age from birth date ---- */
     const birthdate = document.getElementById('personal-birthdate');

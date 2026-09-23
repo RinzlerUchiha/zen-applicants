@@ -3,8 +3,28 @@
 @section('content')
 
 <style>
+    /* Each pair is two equal columns that stack on a narrow screen — the
+       right-hand word used to be cut off. */
+    #form-tapt .set-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    #form-tapt .set-row .form-check {
+        margin-left: 0 !important;
+        padding-left: 26px;
+    }
+
+    #form-tapt .set-row .form-check-label {
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 575.98px) {
+        #form-tapt .set-row { grid-template-columns: 1fr; }
+    }
+
     #form-tapt {
-        font-family: 'Courier New', Courier, monospace;
         user-select: none;
     }
 
@@ -50,9 +70,9 @@
 </script>
 @endif
 
-<form id="form-tapt" class="mx-md-5 mb-5" oncontextmenu="return false;">
+<form id="form-tapt" class="mb-5" oncontextmenu="return false;">
     <fieldset {{ $answer ? 'disabled' : '' }}>
-        <div class="text-muted small mb-3">Instructions: Below are four set of word pairs. Review each pair carefully. Choose the ONE word in each pair which most accurately describes the “real you” by putting a check mark before each word. Remember that there are no right or wrong responses</div>
+        <div class="text-muted small mb-3">Instructions: Below are four sets of word pairs. Review each pair carefully. Choose the ONE word in each pair which most accurately describes the “real you” by putting a check mark before each word. Remember that there are no right or wrong responses</div>
         <div class="row g-3">
             @foreach ($answerList as $s => $set)
                 <div class="col-md-6">

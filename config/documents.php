@@ -36,6 +36,22 @@ return [
     ],
 
     /*
+    | How each type is named in a document's standard file name
+    | ("DELA CRUZ, JUAN, P - CV.pdf", App\Services\DocumentName). Short, and
+    | free of characters a file name cannot hold.
+    */
+    'file_labels' => [
+        'resume_cv'              => 'CV',
+        'picture_2x2'            => '2x2',
+        'cover_letter'           => 'Cover Letter',
+        'psa_birth_certificate'  => 'PSA Birth Certificate',
+        'nbi_police_clearance'   => 'NBI-Police Clearance',
+        'tor_diploma'            => 'TOR-Diploma',
+        'certificate_employment' => 'COE',
+        'government_ids'         => 'Government IDs',
+    ],
+
+    /*
     | The application stage: an applicant submits a résumé and a 2x2 picture,
     | with a cover letter optional. These three are the only types an applicant
     | can upload and the only types HR reviews at this stage.

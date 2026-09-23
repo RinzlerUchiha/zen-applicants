@@ -4,8 +4,17 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 
     <style>
+    /* The rating table scrolls inside the page's card on small screens
+       instead of pushing the form past it. */
+    #form-career-anchors {
+        overflow-x: auto;
+    }
+
+    #tbl-career-anchors {
+        min-width: 340px;
+    }
+
         #form-career-anchors {
-            font-family: 'Courier New', Courier, monospace;
             user-select: none;
         }
 
@@ -91,7 +100,7 @@
         </script>
     @endif
 
-    <form id="form-career-anchors" class="mx-md-5 mb-5" oncontextmenu="return false;">
+    <form id="form-career-anchors" class="mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">Use the following scale to rate how each of the items is for you. Check the THREE highest items that seem most true for you</div>
             <table class="zn-table text-center">

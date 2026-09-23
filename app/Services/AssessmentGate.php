@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\AssessmentAccess;
+use App\Models\AssessmentAccessRequest;
+use App\Models\AssessmentAttempt;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +63,116 @@ class AssessmentGate
         $access = $this->current($user);
 
         return $access !== null && $access->redeemed_at->greaterThan($moment);
+    }
+
+    /**
+     * The most recent code this applicant entered, in any browser and whether
+     * or not it is still open — to tell them their access ENDED (or is open
+     * elsewhere) rather than that they never had any.
+     */
+    public function lastUnlock(User $user): ?AssessmentAccess
+    {
+        return AssessmentAccess::where('app_id', $user->app_id)
+            ->whereNotNull('redeemed_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /* ------------------------------------------------------------------
+     * Asking HR for a new code
+     *
+     * Access is authorization to START (or resume, or move) assessments; it
+     * ends after unlock_hours. An assessment already running is not affected
+     * by that — it carries on to its own time limit. Afterwards, the next
+     * assessment needs a new code, and the applicant can ask HR for one here.
+     *
+     * One open request per applicant: asking again refreshes it. HR sees open
+     * requests in zen-admin, and issuing a code resolves them. No message is
+     * sent anywhere.
+     * ------------------------------------------------------------------ */
+
+    /** The applicant's open request, if any. */
+    public function openRequest(User $user): ?AssessmentAccessRequest
+    {
+        return AssessmentAccessRequest::where('app_id', $user->app_id)->open()->orderByDesc('id')->first();
+    }
+
+    /**
+     * May ask: HR has given them a code before (the assessments are provided
+     * after the initial interview — a first code comes from HR, not a request),
+     * and they need one now: access is not open in this browser, or it is but
+     * a paused assessment needs a code entered after it stopped.
+     */
+    public function canRequest(User $user): bool
+    {
+        if (!AssessmentAccess::where('app_id', $user->app_id)->exists()) {
+            return false;
+        }
+
+        $current = $this->current($user);
+
+        return $current === null
+            || AssessmentAttempt::where('app_id', $user->app_id)
+                ->where('status', AssessmentAttempt::INTERRUPTED)
+                ->where('interrupted_at', '>=', $current->redeemed_at)
+                ->exists();
+    }
+
+    /**
+     * Record (or refresh) the request. $assessment is the one they were on;
+     * the reason is worked out here from their situation, not taken on trust.
+     */
+    public function requestAccess(User $user, ?string $assessment): AssessmentAccessRequest
+    {
+        if (!$this->canRequest($user)) {
+            throw ValidationException::withMessages(['access_request' => [
+                $this->isUnlocked($user)
+                    ? 'Your assessments are already open in this browser.'
+                    : 'The assessments are provided by HR after your initial interview.',
+            ]]);
+        }
+
+        $reason = $this->requestReason($user, $assessment);
+
+        return DB::transaction(function () use ($user, $assessment, $reason) {
+            User::whereKey($user->app_id)->lockForUpdate()->first();
+
+            $open = $this->openRequest($user);
+
+            if ($open) {
+                $open->update([
+                    'reason' => $reason,
+                    'assessment' => $assessment,
+                    'requested_at' => now(),
+                    'times_asked' => $open->times_asked + 1,
+                ]);
+
+                return $open;
+            }
+
+            return AssessmentAccessRequest::create([
+                'app_id' => $user->app_id,
+                'reason' => $reason,
+                'assessment' => $assessment,
+                'requested_at' => now(),
+            ]);
+        });
+    }
+
+    private function requestReason(User $user, ?string $assessment): string
+    {
+        $attempt = $assessment
+            ? AssessmentAttempt::where('app_id', $user->app_id)->where('assessment', $assessment)->first()
+            : null;
+
+        if ($attempt?->isInterrupted()) {
+            return 'paused';
+        }
+        if ($attempt?->isActive() && $attempt->session_hash !== self::sessionHash()) {
+            return 'other_browser';
+        }
+
+        return 'expired';
     }
 
     /**

@@ -83,6 +83,32 @@ return [
                 'report' => false,
             ],
 
+        /*
+        | Job posting photos — read-only here. HR adds them in zen-admin (Job
+        | Postings), which stores them per Job Specification under
+        | jobspec-photos/{jspec_id}/ on its usual image disk: the company bucket
+        | in production (the same bucket and folder as the 's3' disk below) and
+        | zen-admin's own public storage on a development machine.
+        */
+        'job_photos' => env('JOB_PHOTOS_DRIVER', env('APP_ENV') === 'local' ? 'local' : 's3') === 's3'
+            ? [
+                'driver' => 's3',
+                'key' => env('AWS_ACCESS_KEY_ID'),
+                'secret' => env('AWS_SECRET_ACCESS_KEY'),
+                'region' => env('AWS_DEFAULT_REGION'),
+                'bucket' => env('AWS_BUCKET'),
+                'endpoint' => env('AWS_ENDPOINT'),
+                'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+                'root' => env('AWS_FOLDER', ''),
+                'directory_separator' => '/',
+                'throw' => false,
+            ]
+            : [
+                'driver' => 'local',
+                'root' => env('JOB_PHOTOS_LOCAL_ROOT', base_path('../zen-admin/storage/app/public')),
+                'throw' => false,
+            ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

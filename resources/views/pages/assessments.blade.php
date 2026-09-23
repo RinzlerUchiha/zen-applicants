@@ -39,11 +39,18 @@
                 </div>
             </section>
         @else
+            @php $hadAccess = app(\App\Services\AssessmentGate::class)->lastUnlock(auth()->user()) !== null; @endphp
             <section class="zn-assess-panel">
                 <div class="zn-assess-panel-icon"><i class="bi bi-lock-fill"></i></div>
                 <div class="zn-assess-panel-main">
-                    <p class="zn-assess-panel-title">These are provided by HR after your initial interview</p>
-                    <p class="zn-assess-panel-text">{{ config('application_form.assessments.gate_message') }}</p>
+                    @if ($hadAccess)
+                        {{-- Access is time-limited. Assessments already finished
+                             are kept; the next one needs a new code. --}}
+                        <p class="zn-assess-panel-title">Enter a new access code to continue</p>
+                    @else
+                        <p class="zn-assess-panel-title">These are provided by HR after your initial interview</p>
+                        <p class="zn-assess-panel-text">{{ config('application_form.assessments.gate_message') }}</p>
+                    @endif
                     @include('pages.partials.assessment-code')
                 </div>
             </section>

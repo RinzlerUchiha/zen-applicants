@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Services\JobApplicationService;
+use App\Services\ApplicationMaterials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -101,19 +101,18 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        // Came here from a job posting — submit that application now rather
-        // than making the applicant find the posting again.
+        // Came here from a job posting — continue that application now rather
+        // than making the applicant find the posting again: submitted at once
+        // if their CV and 2x2 picture are on file, otherwise the apply step.
         $intendedJobId = session()->pull('intended_job_id');
 
         if ($intendedJobId) {
-            $result = JobApplicationService::apply($user->app_id, $intendedJobId);
-
-            return redirect()
-                ->route('applications.index')
-                ->with($result['success'] ? 'success' : 'error', $result['message']);
+            return ApplicationMaterials::continueTo($user->app_id, (int) $intendedJobId);
         }
 
-        return redirect()->intended(route('personal.show'));
+        // Home is the applicant's dashboard: where their applications, next
+        // steps and the Application Form all are.
+        return redirect()->intended(route('home'));
     }
 
     /**

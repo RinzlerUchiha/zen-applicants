@@ -31,6 +31,10 @@
     $left = intdiv($exam->remaining + 59, 60);
     $graceMinutes = intdiv(config('application_form.assessments.attempts.grace_seconds'), 60);
     $running = $exam->status === 'active' && $exam->token;
+    // A started aptitude test is finished before anything else
+    // (App\Http\Middleware\AptitudeLock), so while it is unfinished this page
+    // offers no way back to the list.
+    $aptitudeHeld = $aptitude && in_array($exam->status, ['active', 'elsewhere', 'interrupted'], true);
 @endphp
 
 @section('title', $meta['label'])
@@ -46,7 +50,7 @@
             <div class="zn-toast error"><i class="bi bi-exclamation-circle-fill"></i> {{ session('error') }}</div>
         @endif
 
-        @unless ($running)
+        @unless ($running || $aptitudeHeld)
             <p style="margin:0 0 12px">
                 <a class="zn-link" href="{{ route('assessments.index') }}">&larr; All assessments</a>
             </p>
@@ -82,7 +86,7 @@
                     <div class="zn-assess-panel-main">
                         <p class="zn-assess-panel-title">Enter your access code to open this assessment</p>
                         <p class="zn-assess-panel-text">{{ config('application_form.assessments.gate_message') }}</p>
-                        @include('pages.partials.assessment-code')
+                        @include('pages.partials.assessment-code', ['assessmentKey' => $exam->key])
                     </div>
                 </section>
                 @break
@@ -110,7 +114,8 @@
                                     @if (!empty($meta['shuffle']['questions']))
                                         Questions and choices are in a different order for each applicant.
                                     @endif
-                                    You can leave a question and come back to it.</span>
+                                    You can leave a question and come back to it. Once you start, finish and
+                                    submit this test before moving on to another assessment.</span>
                             @else
                                 <b>No right or wrong answers</b>
                                 <span>Answer as you really are, not as you think you should be. Every item needs an answer.</span>
@@ -155,7 +160,7 @@
                                 <button type="submit" class="zn-btn">Continue here</button>
                             </form>
                         @else
-                            @include('pages.partials.assessment-code')
+                            @include('pages.partials.assessment-code', ['assessmentKey' => $exam->key])
                         @endif
                     </div>
                 </section>
@@ -176,7 +181,7 @@
                             </form>
                         @else
                             <p class="zn-assess-panel-text">To continue, ask HR for a new access code and enter it here.</p>
-                            @include('pages.partials.assessment-code')
+                            @include('pages.partials.assessment-code', ['assessmentKey' => $exam->key])
                         @endif
                     </div>
                 </section>

@@ -8,7 +8,6 @@
     {{-- <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css"> --}}
     <style>
         #form-disc {
-            font-family: 'Courier New', Courier, monospace;
             user-select: none;
         }
 
@@ -161,7 +160,7 @@
         </script>
     @endif
 
-    <div id="form-disc" class="mx-md-5 mb-5" oncontextmenu="return false;">
+    <div id="form-disc" class="mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">Instrucions: Rank each category of words on a scale of 4,3,2,1 with 4 being the word that best describes you and 1 being the least like you. Use all rankings in each category only once.</div>
             <table class="zn-table" id="tbl-disc">

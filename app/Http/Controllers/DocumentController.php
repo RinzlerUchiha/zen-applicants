@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\DocumentRequest;
 use App\Models\User;
 use App\Services\ApplicantDocumentStatus;
+use App\Services\DocumentName;
 use App\Services\FileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,12 @@ class DocumentController extends Controller
         $appId = auth()->user()->app_id;
         $type = $validated['doc_type'];
         $disk = config('documents.disk');
+
+        // Sent from a job posting's apply step: that is where the applicant
+        // goes back to, with the same messages.
+        $back = ctype_digit((string) $request->input('for_posting'))
+            ? route('careers.apply.form', (int) $request->input('for_posting'))
+            : route('documents.index');
         $folder = config('documents.path') . '/' . $appId;
 
         try {
@@ -70,14 +77,17 @@ class DocumentController extends Controller
         } catch (\Throwable $e) {
             report($e);
 
-            return redirect()->route('documents.index')
+            return redirect()->to($back)
                 ->withErrors(['doc_file' => 'That file could not be uploaded. Please try a different file.']);
         }
 
         $key = $folder . '/' . $stored['file'];
+        // The standard name — "LAST, FIRST, M - CV.pdf" — with the extension of
+        // what was actually stored (an image may have been converted).
+        $name = DocumentName::forUser(auth()->user(), $type, pathinfo($stored['file'], PATHINFO_EXTENSION));
 
         try {
-            $previousPath = DB::transaction(function () use ($appId, $type, $key, $stored) {
+            $previousPath = DB::transaction(function () use ($appId, $type, $key, $stored, $name) {
                 // Serialise uploads per applicant, so two submissions of the
                 // same type cannot both create a record.
                 User::where('app_id', $appId)->lockForUpdate()->first();
@@ -93,6 +103,7 @@ class DocumentController extends Controller
                     'doc_file' => $key,
                     'doc_label' => null,
                     'doc_original_name' => $stored['original_name'],
+                    'doc_name' => $name,
                     'doc_mime' => $stored['mime'],
                     'doc_size' => $stored['size'],
                     'uploaded_at' => now(),
@@ -122,7 +133,7 @@ class DocumentController extends Controller
             report($e);
             $this->deleteQuietly($disk, $key);
 
-            return redirect()->route('documents.index')
+            return redirect()->to($back)
                 ->withErrors(['doc_file' => 'That file could not be saved. Please try again.']);
         }
 
@@ -130,7 +141,7 @@ class DocumentController extends Controller
             $this->deleteQuietly($disk, $previousPath);
         }
 
-        return redirect()->route('documents.index')->with(
+        return redirect()->to($back)->with(
             'success',
             $previousPath ? 'Document replaced. HR will check the new file.' : 'Document uploaded.'
         );
@@ -171,10 +182,9 @@ class DocumentController extends Controller
             }
         }, 200, [
             'Content-Type' => $document->doc_mime,
-            // The applicant's own filename is only ever a header value, never
-            // a path. Quotes and newlines are stripped so it cannot break out
-            // of the header or inject another one.
-            'Content-Disposition' => 'inline; filename="' . str_replace(['"', "\r", "\n"], '', $document->doc_original_name) . '"',
+            // The document's standard name (never a path). Quotes and
+            // newlines are stripped so it cannot break out of the header.
+            'Content-Disposition' => $document->content_disposition,
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, max-age=0, no-store',
         ]);

@@ -43,6 +43,11 @@ use Random\Randomizer;
  *     autosaved is submitted for the applicant, through the assessment's own
  *     save — so the result has exactly the format a normal submission has.
  *   - Once SUBMITTED or TIMED_OUT, nothing can be written again.
+ *   - An APTITUDE test, once started, is finished before anything else: no
+ *     other assessment can be started or opened until it is submitted or
+ *     timed out. A paused (interrupted) one still counts — the applicant
+ *     resumes it first. This is only about what may be opened next; the
+ *     recovery rules above are unchanged.
  *
  * Nothing needs a scheduler: an attempt is brought up to date ("settled")
  * whenever it is looked at, and an open page looks at it constantly.
@@ -136,6 +141,28 @@ class AssessmentAttempts
         ];
     }
 
+    /**
+     * The aptitude test this applicant has started and not finished — running
+     * here, open in another browser, or paused — other than $except. It must
+     * be finished before any other assessment. Null when there is none.
+     */
+    public function unfinishedAptitude(User $user, ?string $except = null): ?string
+    {
+        foreach (config('application_form.assessments.list') as $key => $definition) {
+            if ($key === $except || ($definition['kind'] ?? null) !== 'aptitude') {
+                continue;
+            }
+
+            $attempt = $this->settled($user, $key);
+
+            if ($attempt && !$attempt->isFinished()) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
     /** The attempt for this applicant, brought up to date (or null). */
     public function settled(User $user, string $key): ?AssessmentAttempt
     {
@@ -159,6 +186,11 @@ class AssessmentAttempts
 
             $attempt = $this->locked($user, $key);
             $attempt = $attempt ? $this->settle($attempt) : null;
+
+            // An aptitude test that was started is finished first.
+            if (!$attempt?->isFinished() && ($aptitude = $this->unfinishedAptitude($user, $key))) {
+                return 'Finish ' . $this->definition($aptitude)['label'] . ' first — an aptitude test is completed before any other assessment.';
+            }
 
             if ($attempt === null) {
                 if ($this->hasResult($user, $key)) {

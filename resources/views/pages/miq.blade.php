@@ -4,7 +4,6 @@
 
 <style>
     #form-miq {
-        font-family: 'Courier New', Courier, monospace;
         user-select: none;
     }
 
@@ -51,7 +50,7 @@
 </script>
 @endif
 
-<form id="form-miq" class="ms-md-5 mb-5" oncontextmenu="return false;">
+<form id="form-miq" class="mb-5" oncontextmenu="return false;">
     <fieldset {{ $answer ? 'disabled' : '' }}>
         <div class="text-muted small mb-3">Research Shows that all human beings have at least eight different types of intelligences. Depending on your background and age, some intelligences are more developed than the others. This activity will help you find out what your strengths are. Knowing this, you can strengthen the other intelligences that you do not use as often.</div>
         @foreach ($answerList as $i => $item)

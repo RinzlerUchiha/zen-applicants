@@ -4,7 +4,6 @@
 
 <style>
     #form-vak {
-        font-family: 'Courier New', Courier, monospace;
         user-select: none;
     }
 
@@ -49,13 +48,13 @@
 </script>
 @endif
 
-<form id="form-vak" class="ms-md-5 mb-5" oncontextmenu="return false;">
+<form id="form-vak" class="mb-5" oncontextmenu="return false;">
     <fieldset {{ $answer ? 'disabled' : '' }}>
         <div class="text-muted small mb-3">Instructions: Choose the the answer that most represents how you generally behave.</div>
         @foreach ($answerList as $i => $item)
             <div class="row">
                 <div class="col">
-                    <input type="text" readonly tabindex="-1" class="zn-question" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $item['question'] }}">
+                    <p class="zn-question" tabindex="-1" id="q-{{ $i }}" data-item="{{ $i }}">{{ $item['question'] }}</p>
                 </div>
             </div>
             @foreach ($item['answer'] as $o => $opt)

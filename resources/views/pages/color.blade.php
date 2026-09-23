@@ -3,8 +3,46 @@
 @section('content')
 
 <style>
+    /* The option cells wrap instead of forcing one wide row (they used to
+       run past the card, and off-screen entirely on a phone). */
+    #form-color table,
+    #form-color tbody {
+        display: block;
+    }
+
+    #form-color tr {
+        display: grid;
+        grid-template-columns: 40px repeat(auto-fit, minmax(160px, 1fr));
+        gap: 8px;
+        align-items: stretch;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--zn-line);
+    }
+
+    #form-color td {
+        display: block;
+        height: auto !important;
+    }
+
+    #form-color td .zn-btn {
+        min-height: 40px;
+        white-space: normal;
+    }
+
+    /* On a phone there is room for one choice at a time: the number leads the
+       group, then its four options, each full width. */
+    @media (max-width: 599.98px) {
+        #form-color tr {
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+
+        #form-color td.align-middle {
+            font-weight: 700;
+        }
+    }
+
     #form-color {
-        font-family: 'Courier New', Courier, monospace;
         user-select: none;
     }
 
@@ -38,7 +76,7 @@
 </script>
 @endif
 
-<form id="form-color" class="ms-md-5 mb-5" oncontextmenu="return false;">
+<form id="form-color" class="mb-5" oncontextmenu="return false;">
     <fieldset {{ $answer ? 'disabled' : '' }}>
         <div class="text-muted small mb-3">Instructions: Choose the characteristic that best describes you: choose one answer per number.</div>
         <table class="zn-table">

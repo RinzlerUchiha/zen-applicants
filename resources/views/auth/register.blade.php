@@ -30,6 +30,9 @@
          'fields' => ['personal-birthdate', 'personal-civil-status', 'personal-sex', 'personal-nationality',
                       'personal-badd-province', 'personal-badd-city', 'personal-badd-barangay', 'personal-badd-specific']],
 
+        ['key' => 'documents', 'label' => 'Documents', 'title' => 'Your application documents',
+         'fields' => ['doc_resume_cv', 'doc_picture_2x2', 'doc_cover_letter', 'documents']],
+
         ['key' => 'extra',   'label' => 'Optional',  'title' => 'A few optional details',
          'fields' => ['personal-bloodtype', 'personal-height', 'personal-weight', 'personal-religion', 'personal-dialect',
                       'personal-sss', 'personal-hdmf', 'personal-phic', 'personal-tin']],
@@ -113,7 +116,7 @@
 
         <div class="zn-bar zn-wizard-bar"><i id="step-bar" style="width: {{ round(100 / $total) }}%"></i></div>
 
-        <form id="form-personal" action="{{ route('register.store') }}" method="POST" novalidate>
+        <form id="form-personal" action="{{ route('register.store') }}" method="POST" enctype="multipart/form-data" novalidate>
             @csrf
 
             {{-- ============ 1 · Name ============ --}}
@@ -207,6 +210,8 @@
                                         value="{{ $list->br_name }}" @selected(old('personal-padd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
                             @endforeach
                         </select>
+                        <input type="text" class="zn-typed-fallback" data-for="personal-padd-barangay"
+                               value="{{ old('personal-padd-barangay') }}" maxlength="255" placeholder="Type your barangay" hidden>
                     </div>
                     <div class="zn-fld zn-col-3">
                         <label for="personal-padd-specific">Street / House no. <span class="zn-req">*</span></label>
@@ -220,7 +225,7 @@
                     {{-- Most applicants live where they're registered. One tick
                          beats retyping four fields. --}}
                     <label class="zn-check">
-                        <input type="checkbox" id="same-as-permanent">
+                        <input type="checkbox" id="same-as-permanent" data-same-as-to="cadd">
                         <span>Same as permanent address</span>
                     </label>
                 </div>
@@ -254,6 +259,8 @@
                                         value="{{ $list->br_name }}" @selected(old('personal-cadd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
                             @endforeach
                         </select>
+                        <input type="text" class="zn-typed-fallback" data-for="personal-cadd-barangay"
+                               value="{{ old('personal-cadd-barangay') }}" maxlength="255" placeholder="Type your barangay" hidden>
                     </div>
                     <div class="zn-fld zn-col-3">
                         <label for="personal-cadd-specific">Street / House no. <span class="zn-req">*</span></label>
@@ -303,7 +310,13 @@
                     </div>
                 </div>
 
-                <div class="zn-section mt-4"><h5>Place of birth</h5></div>
+                <div class="zn-formcard-head mt-4">
+                    <div class="zn-section mb-0"><h5>Place of birth</h5></div>
+                    <label class="zn-check">
+                        <input type="checkbox" id="same-as-permanent-birth" data-same-as-to="badd">
+                        <span>Same as permanent address</span>
+                    </label>
+                </div>
                 <p class="zn-help">Optional — you can fill this in later from your profile.</p>
 
                 <div class="zn-grid">
@@ -335,6 +348,8 @@
                                         value="{{ $list->br_name }}" @selected(old('personal-badd-barangay') === $list->br_name)>{{ $list->br_name }}</option>
                             @endforeach
                         </select>
+                        <input type="text" class="zn-typed-fallback" data-for="personal-badd-barangay"
+                               value="{{ old('personal-badd-barangay') }}" maxlength="255" placeholder="Type your barangay" hidden>
                     </div>
                     <div class="zn-fld zn-col-3">
                         <label for="personal-badd-specific">Street / House no. <span class="zn-opt">optional</span></label>
@@ -344,8 +359,62 @@
                 </div>
             </section>
 
-            {{-- ============ 5 · Optional details ============ --}}
+            {{-- ============ 5 · Application documents ============
+                 Only when signing up in order to apply: the application is
+                 sent with a CV and a 2x2 picture (config/documents.php), so
+                 they are collected here rather than after the account exists.
+                 Files are held against the session until the account is
+                 created (App\Services\SignupDocuments). --}}
+            @php
+                $heldDocs = \App\Services\SignupDocuments::held();
+                $docTypes = \App\Services\SignupDocuments::fields();
+                $requiredDocs = config('documents.required');
+            @endphp
             <section class="zn-card zn-formcard zn-wstep" data-step="4" hidden>
+                <div class="zn-section"><h5>Your application documents</h5></div>
+                <p class="zn-help">
+                    @if ($posting)
+                        Your application for <b>{{ $posting->posting_title }}</b> is sent with these.
+                    @else
+                        You can add these now or later from your profile.
+                    @endif
+                    We accept {{ strtoupper(implode(', ', config('documents.extensions'))) }} up to
+                    {{ round(config('documents.max_size_kb') / 1024) }} MB — a clear phone photo is fine.
+                </p>
+
+                @error('documents')<p class="zn-field-error" role="alert">{{ $message }}</p>@enderror
+
+                <div class="zn-signup-docs">
+                    @foreach ($docTypes as $type => $field)
+                        @php $held = $heldDocs[$type] ?? null; @endphp
+                        <div class="zn-signup-doc {{ $held ? 'is-held' : '' }}">
+                            <div class="zn-signup-doc-main">
+                                <b>{{ config('documents.types.' . $type) }}
+                                    @if (in_array($type, $requiredDocs, true) && $posting)
+                                        <span class="zn-req">*</span>
+                                    @else
+                                        <span class="zn-opt">optional</span>
+                                    @endif
+                                </b>
+                                <span>
+                                    @if ($held)
+                                        <i class="bi bi-check-circle-fill"></i> {{ $held['original_name'] }} — ready to send
+                                    @else
+                                        {{ $type === 'picture_2x2' ? 'A recent 2x2 ID photo.' : ($type === 'cover_letter' ? 'Optional, but it helps your application.' : 'Your CV or résumé.') }}
+                                    @endif
+                                </span>
+                            </div>
+                            <input type="file" class="zn-signup-doc-input" name="{{ $field }}" id="{{ $field }}"
+                                   accept=".{{ implode(',.', config('documents.extensions')) }}">
+                            <label class="zn-btn zn-btn-out zn-btn-sm" for="{{ $field }}">{{ $held ? 'Replace' : 'Choose file' }}</label>
+                            @error($field)<p class="zn-field-error" role="alert">{{ $message }}</p>@enderror
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
+            {{-- ============ 5 · Optional details ============ --}}
+            <section class="zn-card zn-formcard zn-wstep" data-step="5" hidden>
                 <div class="zn-section"><h5>A few optional details</h5></div>
                 <p class="zn-help">
                     Nothing on this step is required. Skip it and add anything you want later from
@@ -411,7 +480,7 @@
             </section>
 
             {{-- ============ 6 · Password, then the acknowledgement ============ --}}
-            <section class="zn-card zn-formcard zn-wstep" data-step="5" hidden>
+            <section class="zn-card zn-formcard zn-wstep" data-step="6" hidden>
                 <div class="zn-section"><h5>Set a password</h5></div>
                 <p class="zn-help">
                     You'll use this with your email or mobile number to sign back in and follow your
@@ -566,50 +635,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (p.value) p.dispatchEvent(new Event('change'));
     });
 
-    /* ---- Current address mirrors permanent ---- */
-    const sameAs = document.getElementById('same-as-permanent');
-    const pairs = [
-        ['personal-padd-province', 'personal-cadd-province'],
-        ['personal-padd-city', 'personal-cadd-city'],
-        ['personal-padd-barangay', 'personal-cadd-barangay'],
-        ['personal-padd-specific', 'personal-cadd-specific'],
-    ];
-
-    function mirror() {
-        pairs.forEach(function ([from, to]) {
-            const source = document.getElementById(from);
-            const target = document.getElementById(to);
-
-            if (target.tagName === 'SELECT') {
-                target.querySelectorAll('option').forEach(function (option) {
-                    if (option.value === source.value) option.style.display = '';
-                });
-            }
-
-            target.value = source.value;
-            target.disabled = sameAs.checked;
-        });
-    }
-
-    sameAs.addEventListener('change', function () {
-        if (sameAs.checked) {
-            mirror();
-        } else {
-            pairs.forEach(([, to]) => { document.getElementById(to).disabled = false; });
-        }
-    });
-
-    // Keep the mirror live while the box stays ticked.
-    pairs.forEach(function ([from]) {
-        document.getElementById(from).addEventListener('change', function () {
-            if (sameAs.checked) mirror();
-        });
-    });
-
-    // Disabled fields are not submitted, so release them just before send.
-    document.getElementById('form-personal').addEventListener('submit', function () {
-        pairs.forEach(([, to]) => { document.getElementById(to).disabled = false; });
-    });
+    /* ---- "Same as permanent address" (current address and place of
+       birth): public/zn-forms.js ---- */
 
     /* ---- Age from birth date ---- */
     const birthdate = document.getElementById('personal-birthdate');

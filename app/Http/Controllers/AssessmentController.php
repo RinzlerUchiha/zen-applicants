@@ -63,6 +63,20 @@ class AssessmentController extends Controller
             ->with('success', 'Assessments unlocked until ' . $unlock->unlocked_until->format('g:i A') . '.');
     }
 
+    /**
+     * Ask HR for a new access code — access has ended, or a paused assessment
+     * needs one to resume. Recorded for HR to see in zen-admin; nothing is sent.
+     */
+    public function requestAccess(Request $request)
+    {
+        $request->validate(['assessment' => ['nullable', 'string', \Illuminate\Validation\Rule::in(AssessmentAttempts::keys())]]);
+
+        $this->gate->requestAccess(auth()->user(), $request->input('assessment'));
+
+        return redirect()->to(url()->previous() ?: route('assessments.index'))
+            ->with('success', 'HR has been asked for a new access code. When they give it to you, enter it here.');
+    }
+
     /** Start the assessment, resume an interrupted one, or continue it here. */
     public function start(string $assessment)
     {

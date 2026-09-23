@@ -4,7 +4,6 @@
 
 <style>
     #form-basic-math {
-        font-family: 'Courier New', Courier, monospace;
         user-select: none;
     }
 
@@ -55,13 +54,13 @@
 </script>
 @endif
 <div class="w-100 h-100 position-relative">
-    <form id="form-basic-math" class="ms-md-5 mb-5" oncontextmenu="return false;">
+    <form id="form-basic-math" class="mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">BASIC MATH ({{ count($answerList) }} questions)</div>
             @foreach ($answerList as $i => $item)
                 <div class="row">
                     <div class="col">
-                        <input type="text" readonly tabindex="-1" class="zn-question" id="q-{{ $i }}" data-item="{{ $i }}" value="{{ $loop->iteration }}. {{ preg_replace('/^\s*\d+\.\s*/', '', $item['question']) }}">
+                        <p class="zn-question" tabindex="-1" id="q-{{ $i }}" data-item="{{ $i }}">{{ $loop->iteration }}. {{ preg_replace('/^\s*\d+\.\s*/', '', $item['question']) }}</p>
                     </div>
                 </div>
                 @foreach ($item['answer'] as $o => $opt)

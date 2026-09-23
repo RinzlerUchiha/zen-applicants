@@ -19,9 +19,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title', config('app.name'))</title>
+    {{-- A page's own summary, for link previews (e.g. a job posting's short description). --}}
+    @hasSection('description')
+        <meta name="description" content="@yield('description')">
+        <meta property="og:title" content="@yield('title', config('app.name'))">
+        <meta property="og:description" content="@yield('description')">
+    @endif
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="url-prefix" content="{{ url('/') }}">
     <link rel="icon" href="https://teamtngc.com/zen/assets/img/coffi.png" type="image/png">
+    {{-- Must stay the first stylesheet: the calendar (Flatpickr) positions
+         itself using the page's first stylesheet, and fails if that one comes
+         from another site (a CDN). --}}
+    <style id="zn-first-sheet"></style>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -45,6 +55,11 @@
     {{-- Versioned by the file's own modification time, so a stylesheet change
          reaches browsers that cached an earlier copy. A fixed ?v= number kept
          serving stale CSS until someone remembered to bump it. --}}
+    {{-- Calendar for date fields (styled to the theme in main.css), and the
+         shared form helpers: calendar + "same as permanent address". --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
+    <script src="{{ asset('zn-forms.js') }}?v={{ @filemtime(public_path('zn-forms.js')) ?: 1 }}" defer></script>
     <link rel="stylesheet" href="{{ asset('main.css') }}?v={{ @filemtime(public_path('main.css')) ?: 2 }}">
 
     @stack('head')

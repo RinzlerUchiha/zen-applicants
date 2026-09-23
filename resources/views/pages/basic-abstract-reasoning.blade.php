@@ -4,7 +4,6 @@
 
 <style>
     #form-abstract-reasoning {
-        font-family: 'Courier New', Courier, monospace;
         user-select: none;
     }
 
@@ -67,7 +66,7 @@
 </script>
 @endif
 <div class="w-100 h-100 position-relative">
-    <form id="form-abstract-reasoning" class="ms-md-5 mb-5" oncontextmenu="return false;">
+    <form id="form-abstract-reasoning" class="mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">
                 BASIC ABSTRACT REASONING ({{ count($answerList) }} questions) — choose the figure that completes each series.

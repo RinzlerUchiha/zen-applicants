@@ -4,8 +4,16 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 
     <style>
+    /* The ranking table scrolls within the page's card on small screens. */
+    #form-why-i-work {
+        overflow-x: auto;
+    }
+
+    #tbl-why-i-work {
+        min-width: 340px;
+    }
+
         #form-why-i-work {
-            font-family: 'Courier New', Courier, monospace;
             user-select: none;
         }
 
@@ -63,7 +71,7 @@
         </script>
     @endif
 
-    <div id="form-why-i-work" class="mx-md-5 mb-5" oncontextmenu="return false;">
+    <div id="form-why-i-work" class="mb-5" oncontextmenu="return false;">
         <fieldset {{ $answer ? 'disabled' : '' }}>
             <div class="text-muted small mb-3">Below is a list of outcomes that a person might receive for working. Read through all the outcomes and then rank them from 1 to 12 in order of importance (the most important outcome would be ranked 1)</div>
             <table class="zn-table" id="tbl-why-i-work">

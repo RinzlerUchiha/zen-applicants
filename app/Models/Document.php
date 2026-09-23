@@ -44,6 +44,25 @@ class Document extends Model
         return config('documents.path') . '/' . $this->app_id . '/' . $this->doc_file;
     }
 
+    /**
+     * The name shown for this document and used when it is downloaded: its
+     * standard name ("DELA CRUZ, JUAN, P - CV.pdf", set at upload). Rows
+     * without one fall back to the name the file was uploaded with.
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->doc_name ?: ($this->doc_original_name ?: basename((string) $this->doc_file));
+    }
+
+    /** Content-Disposition for viewing the file inline under its display name. */
+    public function getContentDispositionAttribute(): string
+    {
+        $name = str_replace(['"', "\\", "\r", "\n"], '', $this->display_name);
+        $ascii = preg_replace('/[^\x20-\x7E]/', '_', $name);
+
+        return 'inline; filename="' . $ascii . '"; filename*=UTF-8\'\'' . rawurlencode($name);
+    }
+
     public function getIsPdfAttribute(): bool
     {
         return $this->doc_mime === 'application/pdf';

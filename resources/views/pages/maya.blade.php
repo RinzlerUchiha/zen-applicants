@@ -4,7 +4,6 @@
 
     <style>
         #form-maya {
-            font-family: 'Courier New', Courier, monospace;
             user-select: none;
         }
 
@@ -113,7 +112,7 @@
     @endif
     <div class="w-100 h-100 position-relative">
         @if (!$answer)
-            <form id="form-maya" class="ms-md-5 mb-5" oncontextmenu="return false;">
+            <form id="form-maya" class="mb-5" oncontextmenu="return false;">
                 <fieldset {{ $answer ? 'disabled' : '' }}>
                     <div class="text-muted small mb-3">Maya — choose the piece that completes each pattern. Use Prev and Next to move between items.</div>
                     <div id="maya-list" class="d-flex gap-3" style="width: fit-content;">

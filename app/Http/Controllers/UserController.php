@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Application;
 use App\Models\User;
 use App\Services\FileService;
-use App\Services\JobApplicationService;
+use App\Services\ApplicationMaterials;
+use App\Services\SignupDocuments;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -148,6 +149,16 @@ class UserController extends Controller
             if (!$user) {
                 $isNew = true;
 
+                // Sign-up carrying a job: the application's own materials (CV
+                // and 2x2 picture) are part of this form. They are held
+                // against the session first, so a validation bounce does not
+                // ask for the files again.
+                SignupDocuments::take($request);
+
+                if (session('intended_job_id')) {
+                    SignupDocuments::requireForJob();
+                }
+
                 // $existingUser = User::where('email', 'johndoe@example.com')->first();
 
                 // $user = new User();
@@ -217,7 +228,10 @@ class UserController extends Controller
                 // the value the form's hidden field used to submit in the same
                 // situation. Changing the column is a schema decision, not part
                 // of this UX correction.
-                $user->app_posapplied = $intendedPosting->posting_title ?? '';
+                // Not the position applied for yet — that is recorded when the
+                // application itself is created (JobApplicationService::apply),
+                // after the apply step. Sign-up only opens the account.
+                $user->app_posapplied = '';
                 $user->app_date = now()->format('Y-m-d');
                 $user->app_lname = $validated['personal-lastname'];
                 $user->app_fname = $validated['personal-firstname'];
@@ -320,16 +334,19 @@ class UserController extends Controller
             $address->save();
 
             if ($isNew) {
+                // The documents chosen during sign-up become this applicant's
+                // own, named as any other upload.
+                SignupDocuments::commit($user->app_id);
+
                 Auth::login($user);
                 $request->session()->regenerate();
 
                 $intendedJobId = session()->pull('intended_job_id');
 
+                // A new account has no CV or 2x2 picture yet, so this goes on
+                // to the posting's apply step (ApplicationMaterials).
                 if ($intendedJobId) {
-                    $result = JobApplicationService::apply($user->app_id, $intendedJobId);
-                    return redirect()
-                        ->route('applications.index')
-                        ->with($result['success'] ? 'success' : 'error', $result['message']);
+                    return ApplicationMaterials::continueTo($user->app_id, (int) $intendedJobId);
                 }
 
                 return redirect()->route('careers.index')->with('success', 'Account created! Browse open positions and apply below.');

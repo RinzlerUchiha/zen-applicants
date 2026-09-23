@@ -72,6 +72,12 @@ class JobApplicationService
                     'status' => Application::APPLIED,
                     'applied_at' => now(),
                 ]);
+
+                // zen-admin's applicant list, profile header and hire form read
+                // this legacy single-position field. Keep it on the position
+                // most recently applied for, so it can never say "applied for"
+                // something the applicant has not actually applied to.
+                User::where('app_id', $appId)->update(['app_posapplied' => $posting->posting_title ?? '']);
             } catch (QueryException $e) {
                 // The database's one-open-application-per-posting index rejected
                 // the insert: a concurrent submission won. Same outcome as the
