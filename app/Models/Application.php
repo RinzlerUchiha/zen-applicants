@@ -155,10 +155,10 @@ class Application extends Model
             ->first();
     }
 
-    /** Read-only pull of the linked manpower request position + parent MR No. from HireFlow. */
+    /** Read-only pull of the linked manpower request position + parent MR No. from HireFlow (portal_db). */
     public function requestPosition()
     {
-        return DB::connection('hrd2')->table('tbl_manpower_request_position as p')
+        return DB::connection('zen')->table('tbl_manpower_request_position as p')
             ->leftJoin('tbl_manpower_request as r', 'r.id', '=', 'p.request_id')
             ->select('p.*', 'r.mr_no')
             ->where('p.id', $this->request_position_id)
