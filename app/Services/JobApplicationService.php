@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Services\PostingChannelTracker;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,11 @@ class JobApplicationService
                 ];
             }
 
+            // Where this applicant came from: the channel remembered when
+            // they opened the posting through HR's tagged link. Read before
+            // the insert so the row carries it from the start.
+            $channel = PostingChannelTracker::channelFor((int) $jobPostingId);
+
             try {
                 $application = Application::create([
                     'app_id' => $appId,
@@ -71,7 +77,13 @@ class JobApplicationService
                     'job_posting_id' => $jobPostingId,
                     'status' => Application::APPLIED,
                     'applied_at' => now(),
+                    'source_channel' => $channel,
                 ]);
+
+                // Inside the transaction: an application that rolls back must
+                // not leave its channel count behind. Only counted on a real
+                // insert, so the duplicate path below never double-counts.
+                PostingChannelTracker::recordApplication((int) $jobPostingId, $channel);
 
                 // zen-admin's applicant list, profile header and hire form read
                 // this legacy single-position field. Keep it on the position

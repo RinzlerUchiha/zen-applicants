@@ -9,6 +9,7 @@ use App\Services\ApplicationMaterials;
 use App\Services\JobApplicationService;
 use App\Services\ReapplicationPolicy;
 use Illuminate\Http\Request;
+use App\Services\PostingChannelTracker;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -46,7 +47,7 @@ class JobListingController extends Controller
             return view('careers.index', compact('postings'));
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $posting = DB::connection('zen')->table('tbl_job_posting')
             ->where('id', $id)
@@ -56,6 +57,12 @@ class JobListingController extends Controller
         if (!$posting) {
             abort(404, 'This job posting is not available.');
         }
+
+        // Credit the visit to wherever HR advertised it — the ?src= tag on
+        // the link they posted. Recorded after the posting is known to exist,
+        // so a guessed ID cannot manufacture visits. Counts our page only,
+        // never the external site's own views.
+        PostingChannelTracker::recordVisit($request, (int) $posting->id);
 
         // A signed-in applicant still in a cooldown for THIS posting is told when
         // they can apply again, instead of being offered a button that would be
